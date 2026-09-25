@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class StatusController {
 
     @GetMapping("/api/status")
-    public String consultarStatus() {
-        return "API de conciliacao funcionando.";
+    public StatusResponse consultarStatus() {
+        return new StatusResponse("conciliacao-api-java", "OK");
     }
 }
