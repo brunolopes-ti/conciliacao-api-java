@@ -38,8 +38,12 @@ public final class LeitorResultadoTsv {
                     diretorioExecucao,
                     arquivoResultado);
 
-            byte[] conteudo = Files.readAllBytes(
-                    arquivoResultado);
+            byte[] conteudo;
+            try (var entrada = Files.newInputStream(
+                    arquivoResultado, LinkOption.NOFOLLOW_LINKS)) {
+                conteudo = entrada.readNBytes(
+                        (int) TAMANHO_MAXIMO_ARQUIVO + 1);
+            }
 
             validarTamanho(conteudo);
             validarBom(conteudo);

@@ -2,6 +2,7 @@ package br.com.brunolopes.conciliacao.integracao;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.Test;
@@ -14,65 +15,38 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ColetorSaidaProcessoTests {
 
     @Test
-    void deveColetarSaidaDentroDoLimite()
-            throws IOException {
+    void deveColetarSaidaDentroDoLimite() throws IOException {
+        SaidaProcesso saida = ColetorSaidaProcesso.coletar(
+                entrada("processamento concluido"), 1024);
 
-        ByteArrayInputStream entrada =
-                entrada("processamento concluido");
-
-        SaidaProcesso saida =
-                ColetorSaidaProcesso.coletar(
-                        entrada,
-                        1024);
-
-        assertEquals(
-                "processamento concluido",
-                saida.conteudo());
-
+        assertEquals("processamento concluido", saida.conteudo());
         assertFalse(saida.truncada());
     }
 
     @Test
-    void deveTruncarConteudoAcimaDoLimite()
-            throws IOException {
+    void deveTruncarConteudoAcimaDoLimite() throws IOException {
+        SaidaProcesso saida = ColetorSaidaProcesso.coletar(
+                entrada("1234567890"), 5);
 
-        ByteArrayInputStream entrada =
-                entrada("1234567890");
-
-        SaidaProcesso saida =
-                ColetorSaidaProcesso.coletar(
-                        entrada,
-                        5);
-
-        assertEquals(
-                "12345",
-                saida.conteudo());
-
+        assertEquals("12345", saida.conteudo());
         assertTrue(saida.truncada());
     }
 
     @Test
-    void deveAceitarSaidaVazia()
-            throws IOException {
-
-        SaidaProcesso saida =
-                ColetorSaidaProcesso.coletar(
-                        entrada(""),
-                        100);
+    void deveAceitarSaidaVazia() throws IOException {
+        SaidaProcesso saida = ColetorSaidaProcesso.coletar(
+                entrada(""), 100);
 
         assertEquals("", saida.conteudo());
         assertFalse(saida.truncada());
     }
 
     @Test
-    void deveRejeitarLimiteZero()
-            throws IOException {
-
+    void deveRejeitarLimiteZero() {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> ColetorSaidaProcesso.coletar(
-                        entrada("teste"),
-                        0));
+                        entrada("teste"), 0));
     }
 
     @Test
@@ -80,15 +54,11 @@ class ColetorSaidaProcessoTests {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> ColetorSaidaProcesso.coletar(
-                        null,
-                        100));
+                        (InputStream) null, 100));
     }
 
-    private ByteArrayInputStream entrada(
-            String conteudo
-    ) {
+    private ByteArrayInputStream entrada(String conteudo) {
         return new ByteArrayInputStream(
-                conteudo.getBytes(
-                        StandardCharsets.UTF_8));
+                conteudo.getBytes(StandardCharsets.UTF_8));
     }
 }

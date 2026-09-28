@@ -131,6 +131,9 @@ public final class ExecutorCobol {
             processo =
                     processBuilder.start();
 
+            // O contrato nao utiliza stdin: EOF imediato evita espera por entrada.
+            processo.getOutputStream().close();
+
             Process processoEmExecucao =
                     processo;
 
@@ -138,8 +141,7 @@ public final class ExecutorCobol {
                     executorSaida.submit(
                             () ->
                                     ColetorSaidaProcesso.coletar(
-                                            processoEmExecucao
-                                                    .getInputStream(),
+                                            processoEmExecucao,
                                             LIMITE_SAIDA_BYTES));
 
             boolean terminou =
@@ -175,12 +177,19 @@ public final class ExecutorCobol {
                     erro);
 
         } catch (InterruptedException erro) {
-            Thread.currentThread()
-                    .interrupt();
-
-            throw new IllegalStateException(
-                    "Execucao do processo foi interrompida.",
-                    erro);
+            // InterruptedException limpa o sinal; limpar a arvore antes de restaura-lo.
+            IllegalStateException falha = new IllegalStateException(
+                    "Execucao do processo foi interrompida.", erro);
+            try {
+                if (processo != null && processo.isAlive()) {
+                    encerrarArvoreProcessos(processo);
+                }
+            } catch (InterruptedException | RuntimeException encerramento) {
+                falha.addSuppressed(encerramento);
+            } finally {
+                Thread.currentThread().interrupt();
+            }
+            throw falha;
 
         } catch (ExecutionException erro) {
             throw new IllegalStateException(
@@ -241,14 +250,30 @@ public final class ExecutorCobol {
         ProcessHandle principal =
                 processo.toHandle();
 
-        principal.destroy();
-
         for (ProcessHandle descendente
                 : descendentes) {
 
             if (descendente.isAlive()) {
                 descendente.destroy();
             }
+        }
+
+        // Encerrar filhos antes do pai permite que ele recolha seus processos.
+        if (!descendentes.isEmpty()) {
+            long fim = System.nanoTime() + TEMPO_ENCERRAMENTO.toNanos();
+            while (descendentes.stream().anyMatch(ProcessHandle::isAlive)
+                    && System.nanoTime() < fim) {
+                Thread.sleep(10);
+            }
+            for (ProcessHandle filho : descendentes) {
+                if (filho.isAlive()) {
+                    filho.destroyForcibly();
+                }
+            }
+            processo.waitFor(TEMPO_ENCERRAMENTO.toMillis(), TimeUnit.MILLISECONDS);
+        }
+        if (principal.isAlive()) {
+            principal.destroy();
         }
 
         boolean terminou =
