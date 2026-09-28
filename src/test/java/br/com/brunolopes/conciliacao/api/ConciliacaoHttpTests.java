@@ -100,6 +100,39 @@ class ConciliacaoHttpTests {
     }
 
     @Test
+    void deveRejeitarCorpoInesperado() throws Exception {
+        mockMvc.perform(
+                        post("/api/conciliacoes")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"arquivo\":\"teste.csv\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(
+                        jsonPath("$.codigo")
+                                .value("REQUISICAO_INVALIDA"))
+                .andExpect(
+                        jsonPath("$.mensagem")
+                                .value(
+                                        "A requisicao nao aceita corpo."));
+    }
+
+    @Test
+    void deveRejeitarParametroInesperado() throws Exception {
+        mockMvc.perform(
+                        post("/api/conciliacoes")
+                                .queryParam(
+                                        "arquivo",
+                                        "teste.csv"))
+                .andExpect(status().isBadRequest())
+                .andExpect(
+                        jsonPath("$.codigo")
+                                .value("REQUISICAO_INVALIDA"))
+                .andExpect(
+                        jsonPath("$.mensagem")
+                                .value(
+                                        "A requisicao nao aceita parametros."));
+    }
+
+    @Test
     void deveRetornar409ParaConflitoDeDados() throws Exception {
         servico.definirFalha(
                 new ConflitoDadosException(

@@ -6,6 +6,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockHttpServletRequest;
 
 import br.com.brunolopes.conciliacao.api.dto.ConciliacaoResponse;
 import br.com.brunolopes.conciliacao.aplicacao.ResultadoServicoConciliacao;
@@ -29,8 +30,11 @@ class ConciliacaoControllerTests {
         ConciliacaoController controller =
                 new ConciliacaoController(servico);
 
+        MockHttpServletRequest requisicao =
+                new MockHttpServletRequest();
+
         ResponseEntity<ConciliacaoResponse> resposta =
-                controller.criar();
+                controller.criar(requisicao);
 
         assertEquals(
                 HttpStatus.CREATED,
@@ -43,6 +47,7 @@ class ConciliacaoControllerTests {
         assertEquals(123L, corpo.id());
         assertEquals("CONCLUIDA", corpo.status());
         assertEquals(1, corpo.detalhes().size());
+
         assertEquals(
                 "CONFERIDO",
                 corpo.detalhes().get(0).status());

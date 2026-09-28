@@ -9,11 +9,22 @@ import br.com.brunolopes.conciliacao.api.dto.CodigoErroApi;
 import br.com.brunolopes.conciliacao.api.dto.ErroResponse;
 import br.com.brunolopes.conciliacao.aplicacao.excecao.ConflitoDadosException;
 import br.com.brunolopes.conciliacao.aplicacao.excecao.FalhaCobolException;
+import br.com.brunolopes.conciliacao.aplicacao.excecao.RequisicaoInvalidaException;
 import br.com.brunolopes.conciliacao.aplicacao.excecao.ResultadoInvalidoException;
 import br.com.brunolopes.conciliacao.aplicacao.excecao.TimeoutCobolException;
 
 @RestControllerAdvice
 public class TratadorGlobalExcecoes {
+
+    @ExceptionHandler(RequisicaoInvalidaException.class)
+    public ResponseEntity<ErroResponse> tratarRequisicaoInvalida(
+            RequisicaoInvalidaException erro
+    ) {
+        return responder(
+                HttpStatus.BAD_REQUEST,
+                CodigoErroApi.REQUISICAO_INVALIDA,
+                erro.getMessage());
+    }
 
     @ExceptionHandler(ConflitoDadosException.class)
     public ResponseEntity<ErroResponse> tratarConflitoDados(

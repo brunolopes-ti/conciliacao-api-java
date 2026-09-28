@@ -1,5 +1,7 @@
 package br.com.brunolopes.conciliacao.api;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +13,7 @@ import br.com.brunolopes.conciliacao.api.dto.ConciliacaoResponse;
 import br.com.brunolopes.conciliacao.api.mapeamento.ConciliacaoResponseMapper;
 import br.com.brunolopes.conciliacao.aplicacao.ResultadoServicoConciliacao;
 import br.com.brunolopes.conciliacao.aplicacao.ServicoConciliacao;
+import br.com.brunolopes.conciliacao.aplicacao.excecao.RequisicaoInvalidaException;
 
 @RestController
 @RequestMapping("/api/conciliacoes")
@@ -26,7 +29,11 @@ public class ConciliacaoController {
     }
 
     @PostMapping
-    public ResponseEntity<ConciliacaoResponse> criar() {
+    public ResponseEntity<ConciliacaoResponse> criar(
+            HttpServletRequest requisicao
+    ) {
+        validarRequisicao(requisicao);
+
         ResultadoServicoConciliacao resultado =
                 servicoConciliacao.executar();
 
@@ -36,5 +43,25 @@ public class ConciliacaoController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(resposta);
+    }
+
+    private void validarRequisicao(
+            HttpServletRequest requisicao
+    ) {
+        if (!requisicao.getParameterMap().isEmpty()) {
+            throw new RequisicaoInvalidaException(
+                    "A requisicao nao aceita parametros.");
+        }
+
+        boolean possuiConteudo =
+                requisicao.getContentLengthLong() > 0;
+
+        boolean possuiTransferencia =
+                requisicao.getHeader("Transfer-Encoding") != null;
+
+        if (possuiConteudo || possuiTransferencia) {
+            throw new RequisicaoInvalidaException(
+                    "A requisicao nao aceita corpo.");
+        }
     }
 }
