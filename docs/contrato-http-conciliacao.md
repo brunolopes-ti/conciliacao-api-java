@@ -59,9 +59,15 @@ POST /api/conciliacoes
 
 ### Corpo da requisição
 
-A primeira versão não exige corpo.
+A primeira versão não aceita corpo na requisição.
 
-O cliente não informa:
+Qualquer corpo enviado ao endpoint será rejeitado com:
+
+```http
+400 Bad Request
+```
+
+O cliente também não informa:
 
 - caminho de arquivo;
 - caminho do executável COBOL;
@@ -72,6 +78,9 @@ O cliente não informa:
 - diretório temporário.
 
 Essas informações pertencem ao backend.
+
+Parâmetros de requisição inesperados também serão rejeitados com
+`400 Bad Request`.
 
 ---
 

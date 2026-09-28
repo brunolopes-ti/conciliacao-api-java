@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import br.com.brunolopes.conciliacao.api.ConciliacaoController;
 import br.com.brunolopes.conciliacao.api.dto.CodigoErroApi;
 import br.com.brunolopes.conciliacao.api.dto.ErroResponse;
 import br.com.brunolopes.conciliacao.aplicacao.excecao.ConflitoDadosException;
@@ -13,7 +14,7 @@ import br.com.brunolopes.conciliacao.aplicacao.excecao.RequisicaoInvalidaExcepti
 import br.com.brunolopes.conciliacao.aplicacao.excecao.ResultadoInvalidoException;
 import br.com.brunolopes.conciliacao.aplicacao.excecao.TimeoutCobolException;
 
-@RestControllerAdvice
+@RestControllerAdvice(basePackageClasses = ConciliacaoController.class)
 public class TratadorGlobalExcecoes {
 
     @ExceptionHandler(RequisicaoInvalidaException.class)
