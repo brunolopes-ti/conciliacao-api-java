@@ -33,7 +33,7 @@ public class TratadorGlobalExcecoes {
         return responder(
                 HttpStatus.CONFLICT,
                 CodigoErroApi.CONFLITO_DADOS,
-                erro.getMessage());
+                "O estado atual dos dados impede iniciar a conciliacao.");
     }
 
     @ExceptionHandler(ResultadoInvalidoException.class)
@@ -43,7 +43,7 @@ public class TratadorGlobalExcecoes {
         return responder(
                 HttpStatus.UNPROCESSABLE_ENTITY,
                 CodigoErroApi.RESULTADO_INVALIDO,
-                erro.getMessage());
+                "O resultado da conciliacao nao passou pelas validacoes.");
     }
 
     @ExceptionHandler(FalhaCobolException.class)
@@ -53,7 +53,7 @@ public class TratadorGlobalExcecoes {
         return responder(
                 HttpStatus.BAD_GATEWAY,
                 CodigoErroApi.FALHA_COBOL,
-                erro.getMessage());
+                "O motor COBOL nao concluiu o processamento.");
     }
 
     @ExceptionHandler(TimeoutCobolException.class)
@@ -63,7 +63,7 @@ public class TratadorGlobalExcecoes {
         return responder(
                 HttpStatus.GATEWAY_TIMEOUT,
                 CodigoErroApi.TIMEOUT_COBOL,
-                erro.getMessage());
+                "O processamento da conciliacao excedeu o tempo permitido.");
     }
 
     @ExceptionHandler(Exception.class)

@@ -2,7 +2,7 @@ package br.com.brunolopes.conciliacao.api;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,7 +17,10 @@ import br.com.brunolopes.conciliacao.aplicacao.excecao.RequisicaoInvalidaExcepti
 
 @RestController
 @RequestMapping("/api/conciliacoes")
-@ConditionalOnBean(ServicoConciliacao.class)
+@ConditionalOnProperty(
+        name = "conciliacao.api.execucao-habilitada",
+        havingValue = "true"
+)
 public class ConciliacaoController {
 
     private final ServicoConciliacao servicoConciliacao;

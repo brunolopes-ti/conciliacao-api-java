@@ -134,9 +134,12 @@ class ConciliacaoHttpTests {
 
     @Test
     void deveRetornar409ParaConflitoDeDados() throws Exception {
+        String detalheInterno =
+                "/tmp/dados-internos";
+
         servico.definirFalha(
                 new ConflitoDadosException(
-                        "Dados indisponiveis para conciliacao."));
+                        detalheInterno));
 
         mockMvc.perform(
                         post("/api/conciliacoes"))
@@ -147,14 +150,22 @@ class ConciliacaoHttpTests {
                 .andExpect(
                         jsonPath("$.mensagem")
                                 .value(
-                                        "Dados indisponiveis para conciliacao."));
+                                        "O estado atual dos dados impede iniciar a conciliacao."))
+                .andExpect(
+                        content().string(
+                                not(
+                                        containsString(
+                                                detalheInterno))));
     }
 
     @Test
     void deveRetornar422ParaResultadoInvalido() throws Exception {
+        String detalheInterno =
+                "resultado.tsv em /tmp/execucao";
+
         servico.definirFalha(
                 new ResultadoInvalidoException(
-                        "Resultado da conciliacao invalido."));
+                        detalheInterno));
 
         mockMvc.perform(
                         post("/api/conciliacoes"))
@@ -166,14 +177,22 @@ class ConciliacaoHttpTests {
                 .andExpect(
                         jsonPath("$.mensagem")
                                 .value(
-                                        "Resultado da conciliacao invalido."));
+                                        "O resultado da conciliacao nao passou pelas validacoes."))
+                .andExpect(
+                        content().string(
+                                not(
+                                        containsString(
+                                                detalheInterno))));
     }
 
     @Test
     void deveRetornar502ParaFalhaCobol() throws Exception {
+        String detalheInterno =
+                "/home/usuario/bin/conciliacao exit=1";
+
         servico.definirFalha(
                 new FalhaCobolException(
-                        "Falha no processamento COBOL."));
+                        detalheInterno));
 
         mockMvc.perform(
                         post("/api/conciliacoes"))
@@ -184,14 +203,22 @@ class ConciliacaoHttpTests {
                 .andExpect(
                         jsonPath("$.mensagem")
                                 .value(
-                                        "Falha no processamento COBOL."));
+                                        "O motor COBOL nao concluiu o processamento."))
+                .andExpect(
+                        content().string(
+                                not(
+                                        containsString(
+                                                detalheInterno))));
     }
 
     @Test
     void deveRetornar504ParaTimeoutCobol() throws Exception {
+        String detalheInterno =
+                "timeout executando /home/usuario/conciliacao";
+
         servico.definirFalha(
                 new TimeoutCobolException(
-                        "Tempo limite do COBOL excedido."));
+                        detalheInterno));
 
         mockMvc.perform(
                         post("/api/conciliacoes"))
@@ -202,14 +229,22 @@ class ConciliacaoHttpTests {
                 .andExpect(
                         jsonPath("$.mensagem")
                                 .value(
-                                        "Tempo limite do COBOL excedido."));
+                                        "O processamento da conciliacao excedeu o tempo permitido."))
+                .andExpect(
+                        content().string(
+                                not(
+                                        containsString(
+                                                detalheInterno))));
     }
 
     @Test
     void deveOcultarDetalhesDeErroInterno() throws Exception {
+        String detalheInterno =
+                "/tmp/conciliacao-segreda/resultado.tsv";
+
         servico.definirFalha(
                 new RuntimeException(
-                        "/tmp/conciliacao-segreda/resultado.tsv"));
+                        detalheInterno));
 
         mockMvc.perform(
                         post("/api/conciliacoes"))
@@ -226,7 +261,7 @@ class ConciliacaoHttpTests {
                         content().string(
                                 not(
                                         containsString(
-                                                "/tmp/conciliacao-segreda"))));
+                                                detalheInterno))));
     }
 
     static class ServicoConciliacaoTeste
