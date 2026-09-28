@@ -57,6 +57,19 @@ public final class IntegradorExecucaoCobol {
                 execucao.relatorio());
     }
 
+    /** Use esta sobrecarga quando as entradas forem geradas do snapshot. */
+    public ResultadoExecucaoCobol executar(
+            DiretorioExecucaoCobol execucao,
+            SnapshotExecucaoCobol snapshot
+    ) {
+        if (snapshot == null) {
+            throw new IllegalArgumentException("Snapshot e obrigatorio.");
+        }
+        ResultadoExecucaoCobol resultado = executar(execucao);
+        ValidadorSnapshotCobol.validar(snapshot, resultado.resultado());
+        return resultado;
+    }
+
     private CodigoSaidaCobol interpretarCodigoSaida(
             int codigo
     ) {

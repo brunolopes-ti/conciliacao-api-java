@@ -7,6 +7,8 @@ import java.nio.file.Path;
 
 public final class ValidadorArquivosSaidaCobol {
 
+    public static final long LIMITE_RELATORIO_BYTES = 2L * 1024 * 1024;
+
     private ValidadorArquivosSaidaCobol() {
     }
 
@@ -124,7 +126,12 @@ public final class ValidadorArquivosSaidaCobol {
             Path relatorio
     ) {
         try {
-            if (Files.size(relatorio) == 0) {
+            long tamanho = Files.size(relatorio);
+            if (tamanho > LIMITE_RELATORIO_BYTES) {
+                throw new IllegalStateException(
+                        "Relatorio COBOL excede o tamanho maximo permitido.");
+            }
+            if (tamanho == 0) {
                 throw new IllegalStateException(
                         "Relatorio COBOL esta vazio.");
             }
