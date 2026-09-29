@@ -57,6 +57,8 @@ conciliacao_app
 
 As senhas não devem ser gravadas no repositório.
 
+A role `conciliacao_app` deve existir no PostgreSQL antes da execução das migrations, pois as migrations concedem permissões explicitamente para essa role.
+
 ## PostgreSQL do Windows acessado pelo Ubuntu
 
 No ambiente atual, o Ubuntu executa em uma VM VirtualBox usando NAT.
@@ -150,8 +152,8 @@ As versões existentes nesta etapa são:
 ```text
 V1__estrutura_base.sql
 V2__persistencia_conciliacao.sql
-V3__restricoes_csv_e_permissoes.sql
-V4__remover_views_legadas.sql
+V3__endurece_esquema_legado.sql
+V4__remove_views_legadas.sql
 ```
 
 Migrações já aplicadas não devem ser editadas.
