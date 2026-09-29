@@ -11,7 +11,8 @@ public final class IntegradorExecucaoCobol {
     ) {
         if (executor == null) {
             throw new IllegalArgumentException(
-                    "Executor COBOL e obrigatorio.");
+                    "Executor COBOL e obrigatorio."
+            );
         }
 
         this.executor = executor;
@@ -22,51 +23,100 @@ public final class IntegradorExecucaoCobol {
     ) {
         if (execucao == null) {
             throw new IllegalArgumentException(
-                    "Diretorio da execucao COBOL e obrigatorio.");
+                    "Diretorio da execucao COBOL e obrigatorio."
+            );
         }
 
         ArgumentosExecucaoCobol argumentos =
                 ArgumentosExecucaoCobol.de(
-                        execucao);
+                        execucao
+                );
 
-        ResultadoExecucaoProcesso processo =
-                executor.executar(
-                        argumentos);
+        ResultadoExecucaoProcesso processo;
+
+        try {
+            processo =
+                    executor.executar(
+                            argumentos
+                    );
+
+        } catch (TimeoutExecucaoCobolException erro) {
+            throw erro;
+
+        } catch (RuntimeException erro) {
+            throw new FalhaExecucaoCobolException(
+                    "Falha ao executar o motor COBOL.",
+                    erro
+            );
+        }
 
         CodigoSaidaCobol codigoSaida =
                 interpretarCodigoSaida(
-                        processo.codigoSaida());
+                        processo.codigoSaida()
+                );
 
         if (!codigoSaida.processamentoConcluido()) {
-            throw new IllegalStateException(
+            throw new FalhaExecucaoCobolException(
                     "Execucao COBOL terminou com falha. Codigo: "
-                    + codigoSaida.codigo());
+                            + codigoSaida.codigo()
+            );
         }
 
-        ValidadorArquivosSaidaCobol.validar(
-                execucao);
+        ResultadoConciliacao resultado;
 
-        ResultadoConciliacao resultado =
-                LeitorResultadoTsv.ler(
-                        execucao.diretorio(),
-                        execucao.resultado());
+        try {
+            ValidadorArquivosSaidaCobol.validar(
+                    execucao
+            );
+
+            resultado =
+                    LeitorResultadoTsv.ler(
+                            execucao.diretorio(),
+                            execucao.resultado()
+                    );
+
+        } catch (RuntimeException erro) {
+            throw new ResultadoCobolInvalidoException(
+                    "Saidas produzidas pelo COBOL sao invalidas.",
+                    erro
+            );
+        }
 
         return new ResultadoExecucaoCobol(
                 processo,
                 resultado,
-                execucao.relatorio());
+                execucao.relatorio()
+        );
     }
 
-    /** Use esta sobrecarga quando as entradas forem geradas do snapshot. */
     public ResultadoExecucaoCobol executar(
             DiretorioExecucaoCobol execucao,
             SnapshotExecucaoCobol snapshot
     ) {
         if (snapshot == null) {
-            throw new IllegalArgumentException("Snapshot e obrigatorio.");
+            throw new IllegalArgumentException(
+                    "Snapshot e obrigatorio."
+            );
         }
-        ResultadoExecucaoCobol resultado = executar(execucao);
-        ValidadorSnapshotCobol.validar(snapshot, resultado.resultado());
+
+        ResultadoExecucaoCobol resultado =
+                executar(
+                        execucao
+                );
+
+        try {
+            ValidadorSnapshotCobol.validar(
+                    snapshot,
+                    resultado.resultado()
+            );
+
+        } catch (RuntimeException erro) {
+            throw new ResultadoCobolInvalidoException(
+                    "Resultado COBOL diverge do snapshot de entrada.",
+                    erro
+            );
+        }
+
         return resultado;
     }
 
@@ -75,14 +125,16 @@ public final class IntegradorExecucaoCobol {
     ) {
         try {
             return CodigoSaidaCobol.de(
-                    codigo);
+                    codigo
+            );
 
         } catch (IllegalArgumentException erro) {
-            throw new IllegalStateException(
+            throw new FalhaExecucaoCobolException(
                     "Processo COBOL retornou "
-                    + "codigo de saida desconhecido: "
-                    + codigo,
-                    erro);
+                            + "codigo de saida desconhecido: "
+                            + codigo,
+                    erro
+            );
         }
     }
 }

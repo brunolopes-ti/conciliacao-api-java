@@ -28,198 +28,239 @@ class IntegradorExecucaoCobolTests {
         Path executavel =
                 criarScript(
                         "#!/bin/sh\n"
-                        + "printf 'Relatorio da conciliacao\\n' > \"$3\"\n"
-                        + "printf 'VERSAO\\t1\\n"
-                        + "DETALHE\\tP001\\t100.00\\t100.00\\t0.00"
-                        + "\\tCONFERIDO\\t1\\n"
-                        + "RESUMO\\t1\\t0\\t0\\t0\\t0\\t0"
-                        + "\\t100.00\\t100.00\\t0.00\\n' > \"$4\"\n"
-                        + "exit 0\n");
-
-        DiretorioExecucaoCobol execucao =
-                DiretorioExecucaoCobol.criar();
+                                + "printf 'Relatorio da conciliacao\\n' > \"$3\"\n"
+                                + "printf 'VERSAO\\t1\\n"
+                                + "DETALHE\\tP001\\t100.00\\t100.00\\t0.00"
+                                + "\\tCONFERIDO\\t1\\n"
+                                + "RESUMO\\t1\\t0\\t0\\t0\\t0\\t0"
+                                + "\\t100.00\\t100.00\\t0.00\\n' > \"$4\"\n"
+                                + "exit 0\n"
+                );
 
         ExecutorCobol executor =
                 new ExecutorCobol(
                         executavel,
-                        Duration.ofSeconds(5));
+                        Duration.ofSeconds(5)
+                );
 
         IntegradorExecucaoCobol integrador =
                 new IntegradorExecucaoCobol(
-                        executor);
+                        executor
+                );
 
-        ResultadoExecucaoCobol resultado =
-                integrador.executar(
-                        execucao);
+        try (DiretorioExecucaoCobol execucao =
+                     DiretorioExecucaoCobol.criar()) {
 
-        assertTrue(
-                resultado.processo().sucesso());
+            ResultadoExecucaoCobol resultado =
+                    integrador.executar(
+                            execucao
+                    );
 
-        assertEquals(
-                1,
-                resultado.resultado().versao());
+            assertTrue(
+                    resultado.processo().sucesso()
+            );
 
-        assertEquals(
-                1,
-                resultado.resultado()
-                        .detalhes()
-                        .size());
+            assertEquals(
+                    1,
+                    resultado.resultado().versao()
+            );
 
-        assertEquals(
-                StatusConciliacao.CONFERIDO,
-                resultado.resultado()
-                        .detalhes()
-                        .get(0)
-                        .status());
+            assertEquals(
+                    1,
+                    resultado.resultado()
+                            .detalhes()
+                            .size()
+            );
 
-        assertEquals(
-                execucao.relatorio(),
-                resultado.relatorio());
+            assertEquals(
+                    StatusConciliacao.CONFERIDO,
+                    resultado.resultado()
+                            .detalhes()
+                            .getFirst()
+                            .status()
+            );
+
+            assertEquals(
+                    execucao.relatorio(),
+                    resultado.relatorio()
+            );
+        }
     }
 
     @Test
-    void deveRejeitarCodigoUm()
+    void deveClassificarCodigoUmComoFalhaDoMotor()
             throws IOException {
 
         Path executavel =
                 criarScript(
                         "#!/bin/sh\n"
-                        + "exit 1\n");
+                                + "exit 1\n"
+                );
 
         IntegradorExecucaoCobol integrador =
                 criarIntegrador(
-                        executavel);
+                        executavel
+                );
 
-        DiretorioExecucaoCobol execucao =
-                DiretorioExecucaoCobol.criar();
+        try (DiretorioExecucaoCobol execucao =
+                     DiretorioExecucaoCobol.criar()) {
 
-        assertThrows(
-                IllegalStateException.class,
-                () -> integrador.executar(
-                        execucao));
+            assertThrows(
+                    FalhaExecucaoCobolException.class,
+                    () -> integrador.executar(
+                            execucao
+                    )
+            );
+        }
     }
 
     @Test
-    void deveRejeitarCodigoDois()
+    void deveClassificarCodigoDoisComoFalhaDoMotor()
             throws IOException {
 
         Path executavel =
                 criarScript(
                         "#!/bin/sh\n"
-                        + "exit 2\n");
+                                + "exit 2\n"
+                );
 
         IntegradorExecucaoCobol integrador =
                 criarIntegrador(
-                        executavel);
+                        executavel
+                );
 
-        DiretorioExecucaoCobol execucao =
-                DiretorioExecucaoCobol.criar();
+        try (DiretorioExecucaoCobol execucao =
+                     DiretorioExecucaoCobol.criar()) {
 
-        assertThrows(
-                IllegalStateException.class,
-                () -> integrador.executar(
-                        execucao));
+            assertThrows(
+                    FalhaExecucaoCobolException.class,
+                    () -> integrador.executar(
+                            execucao
+                    )
+            );
+        }
     }
 
     @Test
-    void deveRejeitarCodigoDesconhecido()
+    void deveClassificarCodigoDesconhecidoComoFalhaDoMotor()
             throws IOException {
 
         Path executavel =
                 criarScript(
                         "#!/bin/sh\n"
-                        + "exit 7\n");
+                                + "exit 7\n"
+                );
 
         IntegradorExecucaoCobol integrador =
                 criarIntegrador(
-                        executavel);
+                        executavel
+                );
 
-        DiretorioExecucaoCobol execucao =
-                DiretorioExecucaoCobol.criar();
+        try (DiretorioExecucaoCobol execucao =
+                     DiretorioExecucaoCobol.criar()) {
 
-        assertThrows(
-                IllegalStateException.class,
-                () -> integrador.executar(
-                        execucao));
+            assertThrows(
+                    FalhaExecucaoCobolException.class,
+                    () -> integrador.executar(
+                            execucao
+                    )
+            );
+        }
     }
 
     @Test
-    void deveRejeitarResultadoTsvInvalido()
+    void deveClassificarTsvInvalidoComoResultadoInvalido()
             throws IOException {
 
         Path executavel =
                 criarScript(
                         "#!/bin/sh\n"
-                        + "printf 'Relatorio valido\\n' > \"$3\"\n"
-                        + "printf 'resultado invalido\\n' > \"$4\"\n"
-                        + "exit 0\n");
+                                + "printf 'Relatorio valido\\n' > \"$3\"\n"
+                                + "printf 'resultado invalido\\n' > \"$4\"\n"
+                                + "exit 0\n"
+                );
 
         IntegradorExecucaoCobol integrador =
                 criarIntegrador(
-                        executavel);
+                        executavel
+                );
 
-        DiretorioExecucaoCobol execucao =
-                DiretorioExecucaoCobol.criar();
+        try (DiretorioExecucaoCobol execucao =
+                     DiretorioExecucaoCobol.criar()) {
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> integrador.executar(
-                        execucao));
+            assertThrows(
+                    ResultadoCobolInvalidoException.class,
+                    () -> integrador.executar(
+                            execucao
+                    )
+            );
+        }
     }
 
     @Test
-    void deveRejeitarRelatorioAusenteMesmoComCodigoZero()
+    void deveClassificarSaidaAusenteComoResultadoInvalido()
             throws IOException {
 
         Path executavel =
                 criarScript(
                         "#!/bin/sh\n"
-                        + "printf 'VERSAO\\t1\\n"
-                        + "DETALHE\\tP001\\t100.00\\t100.00\\t0.00"
-                        + "\\tCONFERIDO\\t1\\n"
-                        + "RESUMO\\t1\\t0\\t0\\t0\\t0\\t0"
-                        + "\\t100.00\\t100.00\\t0.00\\n' > \"$4\"\n"
-                        + "exit 0\n");
+                                + "printf 'VERSAO\\t1\\n"
+                                + "DETALHE\\tP001\\t100.00\\t100.00\\t0.00"
+                                + "\\tCONFERIDO\\t1\\n"
+                                + "RESUMO\\t1\\t0\\t0\\t0\\t0\\t0"
+                                + "\\t100.00\\t100.00\\t0.00\\n' > \"$4\"\n"
+                                + "exit 0\n"
+                );
 
         IntegradorExecucaoCobol integrador =
                 criarIntegrador(
-                        executavel);
+                        executavel
+                );
 
-        DiretorioExecucaoCobol execucao =
-                DiretorioExecucaoCobol.criar();
+        try (DiretorioExecucaoCobol execucao =
+                     DiretorioExecucaoCobol.criar()) {
 
-        assertThrows(
-                IllegalStateException.class,
-                () -> integrador.executar(
-                        execucao));
+            assertThrows(
+                    ResultadoCobolInvalidoException.class,
+                    () -> integrador.executar(
+                            execucao
+                    )
+            );
+        }
     }
 
     @Test
-    void deveAplicarTimeoutNaExecucaoIntegrada()
+    void deveManterTimeoutComoCategoriaPropria()
             throws IOException {
 
         Path executavel =
                 criarScript(
                         "#!/bin/sh\n"
-                        + "sleep 2\n"
-                        + "exit 0\n");
+                                + "sleep 2\n"
+                                + "exit 0\n"
+                );
 
         ExecutorCobol executor =
                 new ExecutorCobol(
                         executavel,
-                        Duration.ofMillis(100));
+                        Duration.ofMillis(100)
+                );
 
         IntegradorExecucaoCobol integrador =
                 new IntegradorExecucaoCobol(
-                        executor);
+                        executor
+                );
 
-        DiretorioExecucaoCobol execucao =
-                DiretorioExecucaoCobol.criar();
+        try (DiretorioExecucaoCobol execucao =
+                     DiretorioExecucaoCobol.criar()) {
 
-        assertThrows(
-                IllegalStateException.class,
-                () -> integrador.executar(
-                        execucao));
+            assertThrows(
+                    TimeoutExecucaoCobolException.class,
+                    () -> integrador.executar(
+                            execucao
+                    )
+            );
+        }
     }
 
     private IntegradorExecucaoCobol criarIntegrador(
@@ -228,10 +269,12 @@ class IntegradorExecucaoCobolTests {
         ExecutorCobol executor =
                 new ExecutorCobol(
                         executavel,
-                        Duration.ofSeconds(5));
+                        Duration.ofSeconds(5)
+                );
 
         return new IntegradorExecucaoCobol(
-                executor);
+                executor
+        );
     }
 
     private Path criarScript(
@@ -240,17 +283,21 @@ class IntegradorExecucaoCobolTests {
 
         Path script =
                 diretorioTemporario.resolve(
-                        "programa-cobol-teste.sh");
+                        "programa-cobol-teste.sh"
+                );
 
         Files.writeString(
                 script,
                 conteudo,
-                StandardCharsets.UTF_8);
+                StandardCharsets.UTF_8
+        );
 
         Files.setPosixFilePermissions(
                 script,
                 PosixFilePermissions.fromString(
-                        "rwx------"));
+                        "rwx------"
+                )
+        );
 
         return script;
     }
