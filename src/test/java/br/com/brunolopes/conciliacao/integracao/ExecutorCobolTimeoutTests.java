@@ -25,17 +25,22 @@ class ExecutorCobolTimeoutTests {
         Path executavel =
                 criarScript(
                         "#!/bin/sh\n"
-                        + "sleep 2\n"
-                        + "exit 0\n");
+                                + "sleep 2\n"
+                                + "exit 0\n"
+                );
 
         ExecutorCobol executor =
                 new ExecutorCobol(
                         executavel,
-                        Duration.ofMillis(100));
+                        Duration.ofMillis(100)
+                );
 
         assertThrows(
-                IllegalStateException.class,
-                () -> executor.executar(List.of()));
+                TimeoutExecucaoCobolException.class,
+                () -> executor.executar(
+                        List.of()
+                )
+        );
     }
 
     @Test
@@ -45,13 +50,16 @@ class ExecutorCobolTimeoutTests {
         Path executavel =
                 criarScript(
                         "#!/bin/sh\n"
-                        + "exit 0\n");
+                                + "exit 0\n"
+                );
 
         assertThrows(
                 IllegalArgumentException.class,
                 () -> new ExecutorCobol(
                         executavel,
-                        Duration.ZERO));
+                        Duration.ZERO
+                )
+        );
     }
 
     private Path criarScript(
@@ -60,17 +68,21 @@ class ExecutorCobolTimeoutTests {
 
         Path script =
                 diretorioTemporario.resolve(
-                        "programa-timeout.sh");
+                        "programa-timeout.sh"
+                );
 
         Files.writeString(
                 script,
                 conteudo,
-                StandardCharsets.UTF_8);
+                StandardCharsets.UTF_8
+        );
 
         Files.setPosixFilePermissions(
                 script,
                 PosixFilePermissions.fromString(
-                        "rwx------"));
+                        "rwx------"
+                )
+        );
 
         return script;
     }

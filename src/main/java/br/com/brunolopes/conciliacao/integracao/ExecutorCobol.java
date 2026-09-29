@@ -33,7 +33,8 @@ public final class ExecutorCobol {
     public ExecutorCobol(Path executavel) {
         this(
                 executavel,
-                TIMEOUT_PADRAO);
+                TIMEOUT_PADRAO
+        );
     }
 
     public ExecutorCobol(
@@ -42,7 +43,8 @@ public final class ExecutorCobol {
     ) {
         if (executavel == null) {
             throw new IllegalArgumentException(
-                    "Caminho do executavel COBOL e obrigatorio.");
+                    "Caminho do executavel COBOL e obrigatorio."
+            );
         }
 
         if (timeout == null
@@ -50,7 +52,8 @@ public final class ExecutorCobol {
                 || timeout.isNegative()) {
 
             throw new IllegalArgumentException(
-                    "Timeout deve ser maior que zero.");
+                    "Timeout deve ser maior que zero."
+            );
         }
 
         this.executavel =
@@ -67,17 +70,20 @@ public final class ExecutorCobol {
     public void validarExecutavel() {
         if (!Files.exists(executavel)) {
             throw new IllegalArgumentException(
-                    "Executavel COBOL nao existe.");
+                    "Executavel COBOL nao existe."
+            );
         }
 
         if (!Files.isRegularFile(executavel)) {
             throw new IllegalArgumentException(
-                    "Executavel COBOL deve ser um arquivo regular.");
+                    "Executavel COBOL deve ser um arquivo regular."
+            );
         }
 
         if (!Files.isExecutable(executavel)) {
             throw new IllegalArgumentException(
-                    "Arquivo COBOL nao possui permissao de execucao.");
+                    "Arquivo COBOL nao possui permissao de execucao."
+            );
         }
     }
 
@@ -86,11 +92,13 @@ public final class ExecutorCobol {
     ) {
         if (argumentos == null) {
             throw new IllegalArgumentException(
-                    "Argumentos da execucao COBOL sao obrigatorios.");
+                    "Argumentos da execucao COBOL sao obrigatorios."
+            );
         }
 
         return executar(
-                argumentos.comoLista());
+                argumentos.comoLista()
+        );
     }
 
     public ResultadoExecucaoProcesso executar(
@@ -100,24 +108,29 @@ public final class ExecutorCobol {
 
         if (argumentos == null) {
             throw new IllegalArgumentException(
-                    "Lista de argumentos nao pode ser nula.");
+                    "Lista de argumentos nao pode ser nula."
+            );
         }
 
         List<String> comando =
                 new ArrayList<>();
 
         comando.add(
-                executavel.toString());
+                executavel.toString()
+        );
 
         comando.addAll(
-                argumentos);
+                argumentos
+        );
 
         ProcessBuilder processBuilder =
                 new ProcessBuilder(
-                        comando);
+                        comando
+                );
 
         processBuilder.redirectErrorStream(
-                true);
+                true
+        );
 
         Process processo = null;
 
@@ -131,8 +144,12 @@ public final class ExecutorCobol {
             processo =
                     processBuilder.start();
 
-            // O contrato nao utiliza stdin: EOF imediato evita espera por entrada.
-            processo.getOutputStream().close();
+            /*
+             * O contrato nao utiliza stdin:
+             * EOF imediato evita espera por entrada.
+             */
+            processo.getOutputStream()
+                    .close();
 
             Process processoEmExecucao =
                     processo;
@@ -142,19 +159,24 @@ public final class ExecutorCobol {
                             () ->
                                     ColetorSaidaProcesso.coletar(
                                             processoEmExecucao,
-                                            LIMITE_SAIDA_BYTES));
+                                            LIMITE_SAIDA_BYTES
+                                    )
+                    );
 
             boolean terminou =
                     processo.waitFor(
                             timeout.toMillis(),
-                            TimeUnit.MILLISECONDS);
+                            TimeUnit.MILLISECONDS
+                    );
 
             if (!terminou) {
                 encerrarArvoreProcessos(
-                        processo);
+                        processo
+                );
 
-                throw new IllegalStateException(
-                        "Tempo limite da execucao COBOL excedido.");
+                throw new TimeoutExecucaoCobolException(
+                        "Tempo limite da execucao COBOL excedido."
+                );
             }
 
             int codigoSaida =
@@ -163,45 +185,69 @@ public final class ExecutorCobol {
             SaidaProcesso saida =
                     obterSaida(
                             processo,
-                            futuraSaida);
+                            futuraSaida
+                    );
 
             return new ResultadoExecucaoProcesso(
                     codigoSaida,
                     saida.conteudo(),
-                    saida.truncada());
+                    saida.truncada()
+            );
 
         } catch (IOException erro) {
             throw new IllegalStateException(
                     "Falha ao iniciar ou ler "
-                    + "a saida do processo externo.",
-                    erro);
+                            + "a saida do processo externo.",
+                    erro
+            );
 
         } catch (InterruptedException erro) {
-            // InterruptedException limpa o sinal; limpar a arvore antes de restaura-lo.
-            IllegalStateException falha = new IllegalStateException(
-                    "Execucao do processo foi interrompida.", erro);
+            /*
+             * InterruptedException limpa o sinal.
+             * Limpamos a arvore antes de restaura-lo.
+             */
+            IllegalStateException falha =
+                    new IllegalStateException(
+                            "Execucao do processo foi interrompida.",
+                            erro
+                    );
+
             try {
-                if (processo != null && processo.isAlive()) {
-                    encerrarArvoreProcessos(processo);
+                if (processo != null
+                        && processo.isAlive()) {
+
+                    encerrarArvoreProcessos(
+                            processo
+                    );
                 }
-            } catch (InterruptedException | RuntimeException encerramento) {
-                falha.addSuppressed(encerramento);
+
+            } catch (InterruptedException
+                    | RuntimeException encerramento) {
+
+                falha.addSuppressed(
+                        encerramento
+                );
+
             } finally {
-                Thread.currentThread().interrupt();
+                Thread.currentThread()
+                        .interrupt();
             }
+
             throw falha;
 
         } catch (ExecutionException erro) {
             throw new IllegalStateException(
                     "Falha ao coletar "
-                    + "a saida do processo externo.",
-                    erro.getCause());
+                            + "a saida do processo externo.",
+                    erro.getCause()
+            );
 
         } finally {
             limparRecursos(
                     processo,
                     futuraSaida,
-                    executorSaida);
+                    executorSaida
+            );
         }
     }
 
@@ -213,17 +259,20 @@ public final class ExecutorCobol {
         try {
             return futuraSaida.get(
                     TEMPO_COLETA_SAIDA.toMillis(),
-                    TimeUnit.MILLISECONDS);
+                    TimeUnit.MILLISECONDS
+            );
 
         } catch (TimeoutException erro) {
 
             if (processo.isAlive()) {
                 encerrarArvoreProcessos(
-                        processo);
+                        processo
+                );
             }
 
             futuraSaida.cancel(
-                    true);
+                    true
+            );
 
             try {
                 processo.getInputStream()
@@ -232,10 +281,11 @@ public final class ExecutorCobol {
             } catch (IOException ignored) {
             }
 
-            throw new IllegalStateException(
+            throw new TimeoutExecucaoCobolException(
                     "Tempo limite para coletar "
-                    + "a saida do processo COBOL excedido.",
-                    erro);
+                            + "a saida do processo COBOL excedido.",
+                    erro
+            );
         }
     }
 
@@ -258,20 +308,36 @@ public final class ExecutorCobol {
             }
         }
 
-        // Encerrar filhos antes do pai permite que ele recolha seus processos.
+        /*
+         * Encerrar filhos antes do pai permite
+         * que ele recolha seus processos.
+         */
         if (!descendentes.isEmpty()) {
-            long fim = System.nanoTime() + TEMPO_ENCERRAMENTO.toNanos();
-            while (descendentes.stream().anyMatch(ProcessHandle::isAlive)
+            long fim =
+                    System.nanoTime()
+                            + TEMPO_ENCERRAMENTO.toNanos();
+
+            while (descendentes.stream()
+                    .anyMatch(ProcessHandle::isAlive)
                     && System.nanoTime() < fim) {
+
                 Thread.sleep(10);
             }
-            for (ProcessHandle filho : descendentes) {
+
+            for (ProcessHandle filho
+                    : descendentes) {
+
                 if (filho.isAlive()) {
                     filho.destroyForcibly();
                 }
             }
-            processo.waitFor(TEMPO_ENCERRAMENTO.toMillis(), TimeUnit.MILLISECONDS);
+
+            processo.waitFor(
+                    TEMPO_ENCERRAMENTO.toMillis(),
+                    TimeUnit.MILLISECONDS
+            );
         }
+
         if (principal.isAlive()) {
             principal.destroy();
         }
@@ -280,7 +346,8 @@ public final class ExecutorCobol {
                 aguardarEncerramento(
                         principal,
                         descendentes,
-                        TEMPO_ENCERRAMENTO);
+                        TEMPO_ENCERRAMENTO
+                );
 
         if (terminou) {
             return;
@@ -302,12 +369,14 @@ public final class ExecutorCobol {
                 aguardarEncerramento(
                         principal,
                         descendentes,
-                        TEMPO_ENCERRAMENTO);
+                        TEMPO_ENCERRAMENTO
+                );
 
         if (!terminou) {
             throw new IllegalStateException(
                     "Nao foi possivel encerrar "
-                    + "completamente o processo COBOL.");
+                            + "completamente o processo COBOL."
+            );
         }
     }
 
@@ -319,7 +388,7 @@ public final class ExecutorCobol {
 
         long fim =
                 System.nanoTime()
-                + limite.toNanos();
+                        + limite.toNanos();
 
         while (System.nanoTime() < fim) {
 
@@ -329,7 +398,8 @@ public final class ExecutorCobol {
             boolean descendenteVivo =
                     descendentes.stream()
                             .anyMatch(
-                                    ProcessHandle::isAlive);
+                                    ProcessHandle::isAlive
+                            );
 
             if (!principalVivo
                     && !descendenteVivo) {
@@ -346,7 +416,8 @@ public final class ExecutorCobol {
         boolean descendenteVivo =
                 descendentes.stream()
                         .anyMatch(
-                                ProcessHandle::isAlive);
+                                ProcessHandle::isAlive
+                        );
 
         return !principalVivo
                 && !descendenteVivo;
@@ -361,7 +432,8 @@ public final class ExecutorCobol {
                 && !futuraSaida.isDone()) {
 
             futuraSaida.cancel(
-                    true);
+                    true
+            );
         }
 
         if (processo != null) {
@@ -371,7 +443,8 @@ public final class ExecutorCobol {
             }
 
             fecharFluxos(
-                    processo);
+                    processo
+            );
         }
 
         executorSaida.shutdownNow();
@@ -379,7 +452,8 @@ public final class ExecutorCobol {
         try {
             executorSaida.awaitTermination(
                     1,
-                    TimeUnit.SECONDS);
+                    TimeUnit.SECONDS
+            );
 
         } catch (InterruptedException erro) {
             Thread.currentThread()
