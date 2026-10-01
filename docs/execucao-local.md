@@ -154,6 +154,7 @@ V1__estrutura_base.sql
 V2__persistencia_conciliacao.sql
 V3__endurece_esquema_legado.sql
 V4__remove_views_legadas.sql
+V5__corrige_nulos_e_identificadores.sql
 ```
 
 Migrações já aplicadas não devem ser editadas.
@@ -161,7 +162,7 @@ Migrações já aplicadas não devem ser editadas.
 Quando uma alteração futura de banco for necessária, deve ser criada uma nova versão, por exemplo:
 
 ```text
-V5__nome_da_alteracao.sql
+V6__nome_da_alteracao.sql
 ```
 
 O Flyway fica desabilitado por padrão na execução normal:
@@ -344,3 +345,14 @@ GnuCOBOL
 ```
 
 Mainframe, z/OS, JCL, Db2 e CICS não fazem parte da execução local atual.
+
+
+## Correções do bloco 5
+
+A V5 fecha brechas de nulos e rejeita espaços Unicode nas extremidades dos
+identificadores. Registros históricos inválidos impedem a migração; não há
+correção automática nem exclusão de dados. Consulte `correcao-bloco5.md`.
+
+`CONCILIACAO_COBOL_ESPERA_VAGA_MS` limita a espera pelo semáforo (padrão 1000).
+Saturação retorna 503 `CAPACIDADE_ESGOTADA` e registra a execução como FALHOU.
+O limite é do processamento COBOL, não da entrada de todas as requisições HTTP.

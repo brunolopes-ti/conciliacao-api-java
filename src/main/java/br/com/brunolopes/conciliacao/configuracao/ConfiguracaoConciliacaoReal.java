@@ -92,7 +92,9 @@ public class ConfiguracaoConciliacaoReal {
                     @Value(
                             "${conciliacao.cobol.max-concorrencia:1}"
                     )
-                    int maxConcorrencia
+                    int maxConcorrencia,
+                    @Value("${conciliacao.cobol.espera-vaga-ms:1000}")
+                    long esperaVagaMs
             ) {
 
         if (maxConcorrencia <= 0) {
@@ -109,7 +111,8 @@ public class ConfiguracaoConciliacaoReal {
 
         return new ProcessadorConciliacaoCobolLimitado(
                 real,
-                maxConcorrencia
+                maxConcorrencia,
+                esperaVagaMs
         );
     }
 

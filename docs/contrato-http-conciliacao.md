@@ -8,8 +8,8 @@ por iniciar uma conciliação de pagamentos.
 O contrato foi definido antes da implementação do controller e dos DTOs para
 que a camada HTTP siga as regras de negócio e de integração já estabelecidas.
 
-A execução completa ainda dependerá das etapas futuras de persistência,
-snapshot PostgreSQL e geração dos arquivos de entrada do motor COBOL.
+O fluxo com PostgreSQL, snapshot persistente e geração de arquivos COBOL está
+implementado até o bloco 5.
 
 ---
 
@@ -18,7 +18,7 @@ snapshot PostgreSQL e geração dos arquivos de entrada do motor COBOL.
 A API não recebe arquivos CSV, caminhos locais ou dados brutos de cobranças e
 pagamentos enviados pelo cliente.
 
-O fluxo planejado é:
+O fluxo implementado é:
 
 ```text
 requisição HTTP
@@ -92,22 +92,22 @@ Quando uma nova execução for criada e concluída com sucesso:
 201 Created
 ```
 
-Formato planejado:
+Formato da resposta:
 
 ```json
 {
   "id": 123,
   "status": "CONCLUIDA",
   "resumo": {
-    "conferidos": 10,
-    "acima": 1,
-    "abaixo": 2,
-    "duplicados": 1,
-    "semRecebimento": 3,
-    "semPrevisao": 2,
-    "totalEsperado": 1500.00,
-    "totalRecebido": 1475.00,
-    "saldoGlobal": -25.00
+    "conferidos": 1,
+    "acima": 0,
+    "abaixo": 0,
+    "duplicados": 0,
+    "semRecebimento": 0,
+    "semPrevisao": 0,
+    "totalEsperado": 100.00,
+    "totalRecebido": 100.00,
+    "saldoGlobal": 0.00
   },
   "detalhes": [
     {
@@ -122,7 +122,7 @@ Formato planejado:
 }
 ```
 
-O campo `id` será gerado pela camada de persistência, ainda não implementada.
+O campo `id` é gerado pela camada de persistência.
 
 ---
 
@@ -186,7 +186,8 @@ O cliente não deve receber:
 | `409 Conflict` | Estado atual dos dados impede iniciar a conciliação |
 | `422 Unprocessable Entity` | Resultado produzido não passou pelas validações |
 | `500 Internal Server Error` | Falha interna inesperada |
-| `502 Bad Gateway` | Falha ou resposta inválida do motor COBOL |
+| `502 Bad Gateway` | Falha na execução do motor COBOL |
+| `503 Service Unavailable` | Espera por vaga esgotada (`CAPACIDADE_ESGOTADA`) |
 | `504 Gateway Timeout` | Motor COBOL excedeu o tempo permitido |
 
 Os códigos serão refinados durante a implementação da camada de serviço caso
@@ -196,21 +197,19 @@ surjam situações de negócio que exijam tratamento específico.
 
 ## 8. Limites de responsabilidade
 
-A definição deste contrato HTTP não significa que o fluxo completo de negócio
-já esteja implementado.
+A execução e os resultados já são persistidos. Continuam pendentes os endpoints
+de consulta e download. Os relatórios futuros serão reconstruídos dos dados
+persistidos; TXT e TSV são temporários.
 
-Ainda pertencem às próximas etapas:
+O POST permanece síncrono. O timeout do motor não inclui consultas SQL.
+A espera por uma vaga tem prazo separado e configurável (1000 ms por padrão).
+Quando ele termina, a resposta é 503, sem execução do motor para essa chamada.
+O snapshot e o registro de execução já criados permanecem, com estado FALHOU.
+O cliente não deve repetir automaticamente um POST cujo resultado ficou incerto:
+a versão atual não implementa chave de idempotência.
 
-- conexão com PostgreSQL;
-- criação do snapshot persistente;
-- geração de `esperados.csv` e `recebidos.csv` a partir do snapshot;
-- persistência da execução;
-- persistência dos resultados;
-- persistência ou armazenamento do relatório;
-- consulta de conciliações anteriores.
-
-O endpoint não deve contornar essas etapas aceitando arquivos fornecidos pelo
-cliente.
+Detalhes técnicos persistidos em `erro_detalhe` são internos e não pertencem à
+resposta pública de erro.
 
 ---
 

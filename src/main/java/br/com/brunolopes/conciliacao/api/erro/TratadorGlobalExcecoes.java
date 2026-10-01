@@ -1,6 +1,7 @@
 package br.com.brunolopes.conciliacao.api.erro;
 
 import org.springframework.http.HttpStatus;
+import br.com.brunolopes.conciliacao.aplicacao.excecao.CapacidadeEsgotadaException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -65,6 +66,14 @@ public class TratadorGlobalExcecoes {
                 HttpStatus.GATEWAY_TIMEOUT,
                 CodigoErroApi.TIMEOUT_COBOL,
                 "O processamento da conciliacao excedeu o tempo permitido.");
+    }
+
+    @ExceptionHandler(CapacidadeEsgotadaException.class)
+    public ResponseEntity<ErroResponse> tratarCapacidadeEsgotada(
+            CapacidadeEsgotadaException erro) {
+        return responder(HttpStatus.SERVICE_UNAVAILABLE,
+                CodigoErroApi.CAPACIDADE_ESGOTADA,
+                "Capacidade de processamento ocupada. Tente novamente mais tarde.");
     }
 
     @ExceptionHandler(Exception.class)

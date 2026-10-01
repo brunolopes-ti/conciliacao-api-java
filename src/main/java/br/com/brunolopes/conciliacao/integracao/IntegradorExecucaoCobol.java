@@ -50,15 +50,19 @@ public final class IntegradorExecucaoCobol {
             );
         }
 
-        CodigoSaidaCobol codigoSaida =
-                interpretarCodigoSaida(
-                        processo.codigoSaida()
-                );
+        CodigoSaidaCobol codigoSaida;
+        try {
+            codigoSaida = interpretarCodigoSaida(processo.codigoSaida());
+        } catch (FalhaExecucaoCobolException erro) {
+            throw new FalhaExecucaoCobolException(erro.getMessage(), erro,
+                    processo.saidaProcesso());
+        }
 
         if (!codigoSaida.processamentoConcluido()) {
             throw new FalhaExecucaoCobolException(
                     "Execucao COBOL terminou com falha. Codigo: "
-                            + codigoSaida.codigo()
+                            + codigoSaida.codigo(),
+                    null, processo.saidaProcesso()
             );
         }
 

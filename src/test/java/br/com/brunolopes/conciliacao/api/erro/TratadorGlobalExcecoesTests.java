@@ -20,6 +20,14 @@ class TratadorGlobalExcecoesTests {
             new TratadorGlobalExcecoes();
 
     @Test
+    void deveRetornar503ParaCapacidadeEsgotada() {
+        var resposta = tratador.tratarCapacidadeEsgotada(
+                new br.com.brunolopes.conciliacao.aplicacao.excecao.CapacidadeEsgotadaException());
+        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, resposta.getStatusCode());
+        assertEquals("CAPACIDADE_ESGOTADA", resposta.getBody().codigo());
+    }
+
+    @Test
     void deveRetornar409ParaConflitoDeDados() {
         String detalheInterno =
                 "/tmp/dados-internos";
