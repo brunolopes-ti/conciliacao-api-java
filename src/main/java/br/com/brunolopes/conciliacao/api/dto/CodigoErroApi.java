@@ -7,5 +7,6 @@ public enum CodigoErroApi {
     RESULTADO_INVALIDO,
     FALHA_COBOL,
     TIMEOUT_COBOL,
+    CAPACIDADE_ESGOTADA,
     ERRO_INTERNO
 }

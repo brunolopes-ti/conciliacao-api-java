@@ -1,114 +1,103 @@
 # API Java de conciliação de pagamentos
 
-Projeto educacional de Bruno Ramos Lopes, com dados fictícios, para integrar
-Spring Boot ao motor GnuCOBOL e, em etapas posteriores, ao PostgreSQL.
+Projeto educacional de Bruno Ramos Lopes, com dados fictícios e código público.
+Java 21, Spring Boot 4.1.1, PostgreSQL, Flyway e GnuCOBOL em Linux.
 
-## Estado atual
+## Funcionalidades implementadas até o bloco 5
 
-- Java 21, Spring Boot 4.1.1 e Maven Wrapper.
-- `GET /api/status` retorna JSON com `aplicacao` e `status`.
-- Modelos de detalhes, resumo e resultado com `BigDecimal`.
-- Leitura e validação do `resultado.tsv` versão 1.
-- Execução do motor como processo externo, com argumentos separados e timeout.
-- Diretório exclusivo com permissões `rwx------`.
-- Conferência adicional contra um snapshot imutável em memória.
-- Testes com processos simulados e teste opcional com o GnuCOBOL real.
+- `GET /api/status`: informa que a aplicação responde; não verifica banco ou motor.
+- `POST /api/conciliacoes`: captura dados do banco, executa COBOL e persiste resultados.
+- Snapshot persistente em transação `REPEATABLE READ`, ordenado pelo ID de origem.
+- Geração de CSVs internos a partir desse snapshot; não há upload de arquivos.
+- Execução externa com argumentos separados, stdin fechado e timeout.
+- TSV validado internamente e contra os dados originais do snapshot.
+- Persistência atômica do resumo, detalhes e estado `CONCLUIDA`.
+- Registro de falhas por execução e tratamento HTTP sem divulgar detalhes internos.
+- Diretório temporário exclusivo com permissão `0700`, removido após processamento.
 
-A API ainda não expõe uma rota para executar conciliações. Não há acesso ao
-PostgreSQL, snapshot persistente, autenticação ou histórico implementados.
-O status `OK` informa apenas que a rota responde.
+O fluxo é PostgreSQL → snapshot → CSV → COBOL → TSV → validação → PostgreSQL.
+O processamento do COBOL acontece depois do commit do snapshot e antes da
+transação de persistência do resultado, sem manter uma transação JDBC aberta.
 
-## Requisitos
+## Requisitos e execução
 
-- Ubuntu/Linux, JDK 21.
-- Acesso às dependências Maven na primeira execução.
-- Para o teste real: GnuCOBOL, compilador C e o repositório
-  https://github.com/brunolopes-ti/cobol-conciliacao.
+- Ubuntu/Linux, JDK 21 e acesso às dependências Maven na primeira execução.
+- PostgreSQL preparado com as migrations V1 a V5; role `conciliacao_app` existente.
+- Executável compilado do [motor COBOL](https://github.com/brunolopes-ti/cobol-conciliacao).
+- Variáveis de banco e caminho absoluto do executável.
 
-## Executar
+Consulte [execução local](docs/execucao-local.md) para configurar o ambiente e
+[revisão do bloco 5](docs/correcao-bloco5.md) para aplicar a V5 com segurança.
+As senhas ficam no ambiente; não devem ser versionadas.
+
+Com o banco e as variáveis configurados:
 
 ```bash
 bash ./mvnw spring-boot:run
 ```
 
-Em outro terminal no mesmo Ubuntu:
+Em outro terminal:
 
 ```bash
 curl -i http://localhost:8080/api/status
+curl -i -X POST http://localhost:8080/api/conciliacoes
 ```
 
-Resposta:
+O POST exige `CONCILIACAO_API_EXECUCAO_HABILITADA=true`, não aceita corpo nem
+parâmetros e retorna 201 somente depois de persistir o resultado.
+Veja [contrato HTTP](docs/contrato-http-conciliacao.md).
 
-```json
-{"aplicacao":"conciliacao-api-java","status":"OK"}
-```
-
-## Testar
+## Testes
 
 ```bash
 bash ./mvnw test
 ```
 
-O teste `CobolRealTests` é ignorado quando `COBOL_EXECUTAVEL_TESTE` não está
-definido. Os demais testes usam arquivos e processos locais, sem banco.
-
-Para compilar o motor em uma pasta temporária e executar a suíte incluindo o
-motor real:
+Por padrão, os testes externos são ignorados. Um BUILD SUCCESS isolado não
+comprova a execução contra PostgreSQL ou COBOL real: confira também `Skipped`.
 
 ```bash
 bash testes/testar-cobol-real.sh "$HOME/projetos/cobol-conciliacao"
 ```
 
-O teste real usa entradas próprias, não modifica `dados/` do repositório COBOL
-e cobre os seis status, pagamentos adicionais e pagamentos sem cobrança
-repetidos. A comparação usa as entradas ordenadas do snapshot.
+Esse script compila o COBOL em diretório temporário e habilita `CobolRealTests`.
+Para as integrações PostgreSQL e HTTP reais, siga `docs/execucao-local.md`:
+elas exigem um banco descartável já migrado e variáveis específicas.
+As validações SQL estão em `testes/validar-esquema-postgresql.sql` e
+`testes/validar-revisao-bloco5.sql`; usam transação com rollback dos dados.
+Sequências podem avançar mesmo quando os dados são revertidos.
 
-## Integração
+## Limites
 
-`IntegradorExecucaoCobol.executar(execucao)` verifica processo, arquivos e
-consistência interna do TSV. Essa variante não verifica correspondência com
-as entradas e não basta para concluir uma conciliação de negócio.
+- Até 1000 cobranças e 1000 pagamentos por execução.
+- Valores individuais de 0.00 a 99999.99; totais até 99999990.00.
+- TSV e relatório até 2 MiB; captura de saída do processo até 64 KiB.
+- Timeout do motor: 30 segundos por padrão, mais o tempo de encerramento.
+- Concorrência: um motor por JVM por padrão.
+- Espera por vaga: até 1000 ms por padrão; configure
+  `CONCILIACAO_COBOL_ESPERA_VAGA_MS`. Zero rejeita imediatamente quando ocupado.
+- Espera esgotada retorna 503 `CAPACIDADE_ESGOTADA`. A execução e o snapshot
+  já criados ficam registrados e a execução passa a `FALHOU`.
 
-`IntegradorExecucaoCobol.executar(execucao, snapshot)` acrescenta a comparação
-com cobranças e pagamentos do snapshot, incluindo ordem, primeiro recebimento,
-quantidades, ocorrências sem previsão e totais brutos. Na integração futura,
-os CSV deverão ser gerados desse mesmo snapshot.
+A espera por vaga não é um prazo global da requisição nem limita consultas SQL.
+O semáforo é local à JVM; várias instâncias exigem coordenação adicional.
+Não há quota de disco durante a execução nem isolamento por cgroups.
+Encerramento de filhos já órfãos não é garantido. Use apenas motor confiável.
 
-A persistência do snapshot em uma transação PostgreSQL consistente ainda será
-implementada. As listas em memória não substituem essa transação.
+## Diagnóstico e relatórios
 
-Valores individuais: `0.00` a `99999.99`. Totais: até `99999990.00`.
-Campos não aplicáveis ficam vazios no TSV e são representados por `null`.
-Um detalhe `DUPLICADO` contém apenas o primeiro recebimento; o total bruto
-inclui todos os pagamentos. Por isso ele não pode ser reconstituído somando
-somente os detalhes.
+Resumo e detalhes são persistidos; os arquivos TXT/TSV são temporários.
+O download futuro deverá reconstruir um relatório a partir dos dados persistidos.
+Em falha com código de saída, até 2000 code points da saída capturada do motor,
+sem controles, são preservados na exceção interna. O serviço registra a cadeia
+limitada a 4000 caracteres em `erro_detalhe`, associada à execução.
+Esse campo pode conter dados internos: não deve ser devolvido por endpoints de
+consulta. O log geral registra ID, código e quantidade de falhas adicionais,
+sem imprimir stdout. Não existe garantia de captura da saída em timeout.
 
-## Limites e ciclo de vida
+## Pendências planejadas
 
-- TSV: até 2 MiB, com leitura limitada mesmo se o arquivo crescer.
-- Relatório: até 2 MiB na validação após o processo.
-- Saída capturada: 64 KiB; o excedente é consumido e descartado.
-- Timeout padrão: 30 segundos, mais períodos limitados de encerramento.
-- Coleta da saída acompanha o processo principal e termina após consumir os
-  bytes disponíveis quando ele encerra. Saída posterior de filhos órfãos não
-  faz parte do log capturado.
-- A implementação não oferece isolamento de processos como cgroups. Um filho
-  já órfão e não identificado não tem encerramento garantido.
-- Limites verificados após o processo não constituem quota de disco durante
-  a execução; o executável é uma configuração interna confiável.
-
-`DiretorioExecucaoCobol` implementa `AutoCloseable`. O chamador deve encerrar o
-processo e consumir/persistir o relatório antes de chamar `close()`. A limpeza
-não segue links simbólicos. Uma falha de encerramento exige preservar a pasta
-para recuperação; não se deve apagá-la enquanto um processo ainda a utiliza.
-
-O integrador não apaga automaticamente a pasta, pois devolve o caminho do
-relatório. O futuro serviço que coordena persistência e execução será dono
-desse ciclo de vida. Falha de limpeza depois da persistência deverá ser
-registrada sem mudar uma execução já concluída para falha.
-
-## Próximas etapas
-
-Definir o contrato HTTP, conectar PostgreSQL, criar snapshot persistente,
-gerar CSV a partir dele, validar e persistir os resultados. O bloco 4 não
-foi iniciado por esta revisão.
+Consultas HTTP e download de relatórios, autenticação, isolamento por usuário,
+recuperação de execuções abandonadas, frontend e pipeline de CI.
+A aplicação ainda não deve ser exposta publicamente sem controles de acesso.
+Mainframe, z/OS, JCL, Db2 e CICS não fazem parte desta implementação local.

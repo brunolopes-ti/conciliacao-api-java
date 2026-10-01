@@ -89,11 +89,13 @@ public class RepositorioSnapshotConciliacaoJdbc
                 "pagamentos"
         );
 
-        SnapshotExecucaoCobol snapshot =
-                criarSnapshot(
-                        cobrancas,
-                        pagamentos
-                );
+        SnapshotExecucaoCobol snapshot;
+        try {
+            snapshot = criarSnapshot(cobrancas, pagamentos);
+        } catch (IllegalArgumentException erro) {
+            throw new ConflitoDadosException(
+                    "Dados de origem incompativeis com o contrato da conciliacao.", erro);
+        }
 
         persistirCobrancas(
                 conciliacaoId,

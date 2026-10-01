@@ -1,6 +1,10 @@
 package br.com.brunolopes.conciliacao.aplicacao;
 
 import org.springframework.dao.DataAccessException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import br.com.brunolopes.conciliacao.aplicacao.excecao.CapacidadeEsgotadaException;
+import br.com.brunolopes.conciliacao.integracao.FalhaExecucaoCobolException;
 
 import br.com.brunolopes.conciliacao.aplicacao.excecao.ConflitoDadosException;
 import br.com.brunolopes.conciliacao.aplicacao.excecao.FalhaCobolException;
@@ -15,6 +19,8 @@ import br.com.brunolopes.conciliacao.persistencia.RepositorioSnapshotConciliacao
 
 public final class ServicoConciliacaoReal
         implements ServicoConciliacao {
+
+    private static final Logger LOG = LoggerFactory.getLogger(ServicoConciliacaoReal.class);
 
     private final RepositorioExecucaoConciliacao
             repositorioExecucao;
@@ -101,6 +107,10 @@ public final class ServicoConciliacaoReal
                     erro
             );
 
+            // Nao registra stdout nem dados financeiros no log geral.
+            // Diagnostico limitado fica no registro interno da execucao.
+            LOG.error("Conciliacao {} falhou: {}; falhas adicionais: {}",
+                    conciliacaoId, identificarCodigoErro(erro), erro.getSuppressed().length);
             throw erro;
         }
     }
@@ -130,6 +140,9 @@ public final class ServicoConciliacaoReal
     private String identificarCodigoErro(
             RuntimeException erro
     ) {
+        if (erro instanceof CapacidadeEsgotadaException) {
+            return "CAPACIDADE_ESGOTADA";
+        }
         if (erro instanceof ConflitoDadosException) {
             return "CONFLITO_DADOS";
         }
@@ -180,24 +193,24 @@ public final class ServicoConciliacaoReal
         return false;
     }
 
-    private String montarDetalheErro(
-            RuntimeException erro
-    ) {
-        String tipo =
-                erro.getClass()
-                        .getSimpleName();
-
-        String mensagem =
-                erro.getMessage();
-
-        if (mensagem == null
-                || mensagem.isBlank()) {
-
-            return tipo;
+    private String montarDetalheErro(RuntimeException erro) {
+        StringBuilder detalhe = new StringBuilder();
+        var vistos = java.util.Collections.newSetFromMap(
+                new java.util.IdentityHashMap<Throwable, Boolean>());
+        Throwable atual = erro;
+        while (atual != null && vistos.add(atual) && detalhe.length() < 4000) {
+            if (!detalhe.isEmpty()) detalhe.append(" | ");
+            detalhe.append(atual.getClass().getSimpleName());
+            if (atual.getMessage() != null) detalhe.append(": ").append(atual.getMessage());
+            if (atual instanceof FalhaExecucaoCobolException falha
+                    && !falha.diagnostico().isBlank()) {
+                detalhe.append("; motor: ").append(falha.diagnostico());
+            }
+            atual = atual.getCause();
         }
-
-        return tipo
-                + ": "
-                + mensagem;
+        String texto = detalhe.toString();
+        int fim = Math.min(4000, texto.length());
+        if (fim > 0 && Character.isHighSurrogate(texto.charAt(fim - 1))) fim--;
+        return texto.substring(0, fim);
     }
 }

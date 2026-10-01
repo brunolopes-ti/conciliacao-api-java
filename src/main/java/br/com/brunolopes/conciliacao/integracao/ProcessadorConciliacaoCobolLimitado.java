@@ -1,6 +1,8 @@
 package br.com.brunolopes.conciliacao.integracao;
 
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import br.com.brunolopes.conciliacao.aplicacao.excecao.CapacidadeEsgotadaException;
 
 import br.com.brunolopes.conciliacao.modelo.ResultadoConciliacao;
 
@@ -9,11 +11,24 @@ public final class ProcessadorConciliacaoCobolLimitado
 
     private final ProcessadorConciliacaoCobol delegado;
     private final Semaphore limite;
+    private final long esperaMaximaMs;
 
     public ProcessadorConciliacaoCobolLimitado(
             ProcessadorConciliacaoCobol delegado,
             int maximoSimultaneo
     ) {
+        this(delegado, maximoSimultaneo, 1000);
+    }
+
+    public ProcessadorConciliacaoCobolLimitado(
+            ProcessadorConciliacaoCobol delegado,
+            int maximoSimultaneo,
+            long esperaMaximaMs
+    ) {
+        if (esperaMaximaMs < 0) {
+            throw new IllegalArgumentException("Espera maxima nao pode ser negativa.");
+        }
+        this.esperaMaximaMs = esperaMaximaMs;
         if (delegado == null) {
             throw new IllegalArgumentException(
                     "Processador COBOL delegado e obrigatorio."
@@ -44,7 +59,9 @@ public final class ProcessadorConciliacaoCobolLimitado
                 false;
 
         try {
-            limite.acquire();
+            if (!limite.tryAcquire(esperaMaximaMs, TimeUnit.MILLISECONDS)) {
+                throw new CapacidadeEsgotadaException();
+            }
 
             adquiriuPermissao =
                     true;
