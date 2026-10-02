@@ -1,5 +1,6 @@
 package br.com.brunolopes.conciliacao.aplicacao;
 
+import br.com.brunolopes.conciliacao.modelo.StatusExecucaoConciliacao;
 import br.com.brunolopes.conciliacao.modelo.ResultadoConciliacao;
 
 public record ResultadoServicoConciliacao(

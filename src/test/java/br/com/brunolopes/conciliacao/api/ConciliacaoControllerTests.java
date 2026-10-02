@@ -11,7 +11,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import br.com.brunolopes.conciliacao.api.dto.ConciliacaoResponse;
 import br.com.brunolopes.conciliacao.aplicacao.ResultadoServicoConciliacao;
 import br.com.brunolopes.conciliacao.aplicacao.ServicoConciliacao;
-import br.com.brunolopes.conciliacao.aplicacao.StatusExecucaoConciliacao;
+import br.com.brunolopes.conciliacao.modelo.StatusExecucaoConciliacao;
 import br.com.brunolopes.conciliacao.modelo.DetalheConciliacao;
 import br.com.brunolopes.conciliacao.modelo.ResultadoConciliacao;
 import br.com.brunolopes.conciliacao.modelo.ResumoConciliacao;

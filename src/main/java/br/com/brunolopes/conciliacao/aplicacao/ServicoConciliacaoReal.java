@@ -1,5 +1,6 @@
 package br.com.brunolopes.conciliacao.aplicacao;
 
+import br.com.brunolopes.conciliacao.modelo.StatusExecucaoConciliacao;
 import org.springframework.dao.DataAccessException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

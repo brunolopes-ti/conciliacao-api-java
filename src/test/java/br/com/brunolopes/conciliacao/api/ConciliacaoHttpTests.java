@@ -12,7 +12,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import br.com.brunolopes.conciliacao.api.erro.TratadorGlobalExcecoes;
 import br.com.brunolopes.conciliacao.aplicacao.ResultadoServicoConciliacao;
 import br.com.brunolopes.conciliacao.aplicacao.ServicoConciliacao;
-import br.com.brunolopes.conciliacao.aplicacao.StatusExecucaoConciliacao;
+import br.com.brunolopes.conciliacao.modelo.StatusExecucaoConciliacao;
 import br.com.brunolopes.conciliacao.aplicacao.excecao.ConflitoDadosException;
 import br.com.brunolopes.conciliacao.aplicacao.excecao.FalhaCobolException;
 import br.com.brunolopes.conciliacao.aplicacao.excecao.ResultadoInvalidoException;
