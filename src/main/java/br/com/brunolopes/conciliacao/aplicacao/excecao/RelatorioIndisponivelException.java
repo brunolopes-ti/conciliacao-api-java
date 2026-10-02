@@ -5,7 +5,7 @@ public class RelatorioIndisponivelException
 
     public RelatorioIndisponivelException() {
         super(
-                "Relatorio disponivel somente para conciliacoes concluidas."
+                "Relatorio disponivel apenas para conciliacao concluida."
         );
     }
 }

@@ -41,12 +41,26 @@ public final class GeradorRelatorioConciliacao {
                 new StringBuilder();
 
         relatorio.append("RELATORIO DE CONCILIACAO\n");
+        relatorio.append('\n');
+
         relatorio.append("ID: ")
                 .append(conciliacao.id())
                 .append('\n');
 
         relatorio.append("STATUS: ")
                 .append(conciliacao.status().name())
+                .append('\n');
+
+        relatorio.append("CRIADA_EM: ")
+                .append(conciliacao.criadaEm())
+                .append('\n');
+
+        relatorio.append("INICIADA_EM: ")
+                .append(conciliacao.iniciadaEm())
+                .append('\n');
+
+        relatorio.append("FINALIZADA_EM: ")
+                .append(conciliacao.finalizadaEm())
                 .append('\n');
 
         relatorio.append("VERSAO_RESULTADO: ")

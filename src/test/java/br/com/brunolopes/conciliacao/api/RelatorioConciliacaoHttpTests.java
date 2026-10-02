@@ -62,8 +62,12 @@ class RelatorioConciliacaoHttpTests {
 
         String esperado =
                 "RELATORIO DE CONCILIACAO\n"
+                        + "\n"
                         + "ID: 15\n"
                         + "STATUS: CONCLUIDA\n"
+                        + "CRIADA_EM: 2026-10-02T12:00Z\n"
+                        + "INICIADA_EM: 2026-10-02T12:00:01Z\n"
+                        + "FINALIZADA_EM: 2026-10-02T12:00:02Z\n"
                         + "VERSAO_RESULTADO: 1\n"
                         + "\n"
                         + "RESUMO\n"
@@ -133,6 +137,12 @@ class RelatorioConciliacaoHttpTests {
                         jsonPath("$.codigo")
                                 .value(
                                         "RELATORIO_INDISPONIVEL"
+                                )
+                )
+                .andExpect(
+                        jsonPath("$.mensagem")
+                                .value(
+                                        "Relatorio disponivel apenas para conciliacao concluida."
                                 )
                 );
     }
