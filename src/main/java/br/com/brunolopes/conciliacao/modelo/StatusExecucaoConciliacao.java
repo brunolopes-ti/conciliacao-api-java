@@ -1,4 +1,4 @@
-package br.com.brunolopes.conciliacao.aplicacao;
+package br.com.brunolopes.conciliacao.modelo;
 
 public enum StatusExecucaoConciliacao {
     CRIADA,

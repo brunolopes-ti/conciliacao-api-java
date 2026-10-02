@@ -1,7 +1,6 @@
 package br.com.brunolopes.conciliacao.api.erro;
 
 import org.springframework.http.HttpStatus;
-import br.com.brunolopes.conciliacao.aplicacao.excecao.CapacidadeEsgotadaException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -9,13 +8,18 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import br.com.brunolopes.conciliacao.api.ConciliacaoController;
 import br.com.brunolopes.conciliacao.api.dto.CodigoErroApi;
 import br.com.brunolopes.conciliacao.api.dto.ErroResponse;
+import br.com.brunolopes.conciliacao.aplicacao.excecao.CapacidadeEsgotadaException;
+import br.com.brunolopes.conciliacao.aplicacao.excecao.ConciliacaoNaoEncontradaException;
 import br.com.brunolopes.conciliacao.aplicacao.excecao.ConflitoDadosException;
 import br.com.brunolopes.conciliacao.aplicacao.excecao.FalhaCobolException;
+import br.com.brunolopes.conciliacao.aplicacao.excecao.RelatorioIndisponivelException;
 import br.com.brunolopes.conciliacao.aplicacao.excecao.RequisicaoInvalidaException;
 import br.com.brunolopes.conciliacao.aplicacao.excecao.ResultadoInvalidoException;
 import br.com.brunolopes.conciliacao.aplicacao.excecao.TimeoutCobolException;
 
-@RestControllerAdvice(basePackageClasses = ConciliacaoController.class)
+@RestControllerAdvice(
+        basePackageClasses = ConciliacaoController.class
+)
 public class TratadorGlobalExcecoes {
 
     @ExceptionHandler(RequisicaoInvalidaException.class)
@@ -25,7 +29,30 @@ public class TratadorGlobalExcecoes {
         return responder(
                 HttpStatus.BAD_REQUEST,
                 CodigoErroApi.REQUISICAO_INVALIDA,
-                erro.getMessage());
+                erro.getMessage()
+        );
+    }
+
+    @ExceptionHandler(ConciliacaoNaoEncontradaException.class)
+    public ResponseEntity<ErroResponse> tratarConciliacaoNaoEncontrada(
+            ConciliacaoNaoEncontradaException erro
+    ) {
+        return responder(
+                HttpStatus.NOT_FOUND,
+                CodigoErroApi.CONCILIACAO_NAO_ENCONTRADA,
+                erro.getMessage()
+        );
+    }
+
+    @ExceptionHandler(RelatorioIndisponivelException.class)
+    public ResponseEntity<ErroResponse> tratarRelatorioIndisponivel(
+            RelatorioIndisponivelException erro
+    ) {
+        return responder(
+                HttpStatus.CONFLICT,
+                CodigoErroApi.RELATORIO_INDISPONIVEL,
+                erro.getMessage()
+        );
     }
 
     @ExceptionHandler(ConflitoDadosException.class)
@@ -35,7 +62,8 @@ public class TratadorGlobalExcecoes {
         return responder(
                 HttpStatus.CONFLICT,
                 CodigoErroApi.CONFLITO_DADOS,
-                "O estado atual dos dados impede iniciar a conciliacao.");
+                "O estado atual dos dados impede iniciar a conciliacao."
+        );
     }
 
     @ExceptionHandler(ResultadoInvalidoException.class)
@@ -45,7 +73,8 @@ public class TratadorGlobalExcecoes {
         return responder(
                 HttpStatus.UNPROCESSABLE_ENTITY,
                 CodigoErroApi.RESULTADO_INVALIDO,
-                "O resultado da conciliacao nao passou pelas validacoes.");
+                "O resultado da conciliacao nao passou pelas validacoes."
+        );
     }
 
     @ExceptionHandler(FalhaCobolException.class)
@@ -55,7 +84,8 @@ public class TratadorGlobalExcecoes {
         return responder(
                 HttpStatus.BAD_GATEWAY,
                 CodigoErroApi.FALHA_COBOL,
-                "O motor COBOL nao concluiu o processamento.");
+                "O motor COBOL nao concluiu o processamento."
+        );
     }
 
     @ExceptionHandler(TimeoutCobolException.class)
@@ -65,15 +95,19 @@ public class TratadorGlobalExcecoes {
         return responder(
                 HttpStatus.GATEWAY_TIMEOUT,
                 CodigoErroApi.TIMEOUT_COBOL,
-                "O processamento da conciliacao excedeu o tempo permitido.");
+                "O processamento da conciliacao excedeu o tempo permitido."
+        );
     }
 
     @ExceptionHandler(CapacidadeEsgotadaException.class)
     public ResponseEntity<ErroResponse> tratarCapacidadeEsgotada(
-            CapacidadeEsgotadaException erro) {
-        return responder(HttpStatus.SERVICE_UNAVAILABLE,
+            CapacidadeEsgotadaException erro
+    ) {
+        return responder(
+                HttpStatus.SERVICE_UNAVAILABLE,
                 CodigoErroApi.CAPACIDADE_ESGOTADA,
-                "Capacidade de processamento ocupada. Tente novamente mais tarde.");
+                "Capacidade de processamento ocupada. Tente novamente mais tarde."
+        );
     }
 
     @ExceptionHandler(Exception.class)
@@ -83,7 +117,8 @@ public class TratadorGlobalExcecoes {
         return responder(
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 CodigoErroApi.ERRO_INTERNO,
-                "Ocorreu uma falha interna no processamento.");
+                "Ocorreu uma falha interna no processamento."
+        );
     }
 
     private ResponseEntity<ErroResponse> responder(
@@ -94,7 +129,8 @@ public class TratadorGlobalExcecoes {
         ErroResponse corpo =
                 new ErroResponse(
                         codigo.name(),
-                        mensagem);
+                        mensagem
+                );
 
         return ResponseEntity
                 .status(status)

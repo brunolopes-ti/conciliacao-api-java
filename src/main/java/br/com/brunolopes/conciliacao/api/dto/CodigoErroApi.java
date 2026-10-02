@@ -3,6 +3,8 @@ package br.com.brunolopes.conciliacao.api.dto;
 public enum CodigoErroApi {
 
     REQUISICAO_INVALIDA,
+    CONCILIACAO_NAO_ENCONTRADA,
+    RELATORIO_INDISPONIVEL,
     CONFLITO_DADOS,
     RESULTADO_INVALIDO,
     FALHA_COBOL,

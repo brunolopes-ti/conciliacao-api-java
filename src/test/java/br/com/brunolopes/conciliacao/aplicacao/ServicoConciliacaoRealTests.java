@@ -1,5 +1,6 @@
 package br.com.brunolopes.conciliacao.aplicacao;
 
+import br.com.brunolopes.conciliacao.modelo.StatusExecucaoConciliacao;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
