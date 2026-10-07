@@ -24,14 +24,58 @@ public record SnapshotExecucaoCobol(List<Item> cobrancas, List<Item> pagamentos)
         return List.copyOf(itens);
     }
 
-    public record Item(String identificador, BigDecimal valor) {
-        public Item {
-            if (identificador == null || identificador.isBlank()
-                    || !identificador.equals(identificador.strip())
-                    || identificador.codePointCount(0, identificador.length()) > 50
-                    || identificador.codePoints().anyMatch(c -> Character.isISOControl(c) || c == ';')) {
+    private static boolean espacoDoContrato(int cp) {
+        return cp == 0x20
+                || cp == 0x1680
+                || (cp >= 0x2000 && cp <= 0x200A)
+                || cp == 0x2028
+                || cp == 0x2029
+                || cp == 0x205F
+                || cp == 0x3000;
+    }
+
+    private static void validarIdentificador(String identificador) {
+        if (identificador == null || identificador.isEmpty()) {
+            throw new IllegalArgumentException("Identificador invalido no snapshot.");
+        }
+
+        int quantidade = identificador.codePointCount(0, identificador.length());
+        if (quantidade > 50) {
+            throw new IllegalArgumentException("Identificador invalido no snapshot.");
+        }
+
+        int primeiro = identificador.codePointAt(0);
+        int ultimo = identificador.codePointBefore(identificador.length());
+
+        if (espacoDoContrato(primeiro) || espacoDoContrato(ultimo)) {
+            throw new IllegalArgumentException("Identificador invalido no snapshot.");
+        }
+
+        boolean possuiVisivel = false;
+
+        for (int posicao = 0; posicao < identificador.length();) {
+            int cp = identificador.codePointAt(posicao);
+
+            if (Character.isISOControl(cp) || cp == ';') {
                 throw new IllegalArgumentException("Identificador invalido no snapshot.");
             }
+
+            if (!espacoDoContrato(cp)) {
+                possuiVisivel = true;
+            }
+
+            posicao += Character.charCount(cp);
+        }
+
+        if (!possuiVisivel) {
+            throw new IllegalArgumentException("Identificador invalido no snapshot.");
+        }
+    }
+
+    public record Item(String identificador, BigDecimal valor) {
+        public Item {
+            validarIdentificador(identificador);
+
             if (valor == null || valor.signum() < 0
                     || valor.compareTo(new BigDecimal("99999.99")) > 0) {
                 throw new IllegalArgumentException("Valor invalido no snapshot.");

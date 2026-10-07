@@ -356,3 +356,17 @@ correção automática nem exclusão de dados. Consulte `correcao-bloco5.md`.
 `CONCILIACAO_COBOL_ESPERA_VAGA_MS` limita a espera pelo semáforo (padrão 1000).
 Saturação retorna 503 `CAPACIDADE_ESGOTADA` e registra a execução como FALHOU.
 O limite é do processamento COBOL, não da entrada de todas as requisições HTTP.
+
+## Revisao operacional — timeouts e recuperacao
+
+A aplicacao diferencia tres limites:
+
+- `CONCILIACAO_DB_CONNECTION_TIMEOUT_MS`: espera por conexao do pool;
+- `CONCILIACAO_DB_LOCK_TIMEOUT_MS`: espera por lock PostgreSQL;
+- `CONCILIACAO_DB_QUERY_TIMEOUT`: teto configurado no `JdbcTemplate` para a consulta.
+
+A recuperacao periodica marca como `FALHOU` / `EXECUCAO_INTERROMPIDA` apenas
+execucoes que ainda estejam `EM_PROCESSAMENTO` e tenham ultrapassado a idade
+minima configurada. O padrao e 5 minutos, acima dos limites normais do fluxo.
+
+A V6 deve ser aplicada pelo Flyway; V1-V5 nao devem ser alteradas.

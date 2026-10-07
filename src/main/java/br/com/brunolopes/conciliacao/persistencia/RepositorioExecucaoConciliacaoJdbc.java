@@ -134,6 +134,37 @@ public class RepositorioExecucaoConciliacaoJdbc
         );
     }
 
+    @Override
+    public int falharAbandonadas(
+            long idadeMinimaMs
+    ) {
+        if (idadeMinimaMs <= 0) {
+            throw new IllegalArgumentException(
+                    "Idade minima deve ser maior que zero."
+            );
+        }
+
+        return jdbcTemplate.update(
+                """
+                UPDATE public.conciliacoes
+                SET
+                    status = 'FALHOU',
+                    finalizada_em = GREATEST(
+                        clock_timestamp(),
+                        iniciada_em
+                    ),
+                    erro_codigo = 'EXECUCAO_INTERROMPIDA',
+                    erro_detalhe =
+                        'Execucao abandonada recuperada automaticamente.'
+                WHERE status = 'EM_PROCESSAMENTO'
+                  AND iniciada_em <
+                      clock_timestamp()
+                      - (? * interval '1 millisecond')
+                """,
+                idadeMinimaMs
+        );
+    }
+
     private long exigirId(
             Long id
     ) {

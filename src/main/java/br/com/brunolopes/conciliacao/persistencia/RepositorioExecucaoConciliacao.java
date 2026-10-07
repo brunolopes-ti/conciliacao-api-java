@@ -22,4 +22,10 @@ public interface RepositorioExecucaoConciliacao {
             String codigoErro,
             String detalheErro
     );
+
+    default int falharAbandonadas(
+            long idadeMinimaMs
+    ) {
+        return 0;
+    }
 }

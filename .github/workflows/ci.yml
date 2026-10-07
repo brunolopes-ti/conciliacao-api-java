@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: conciliacao_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d conciliacao_ci"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout API Java
+        uses: actions/checkout@v4
+        with:
+          path: conciliacao-api-java
+
+      - name: Checkout motor COBOL
+        uses: actions/checkout@v4
+        with:
+          repository: brunolopes-ti/cobol-conciliacao
+          path: cobol-conciliacao
+
+      - name: Configurar Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: conciliacao-api-java/pom.xml
+
+      - name: Instalar GnuCOBOL e cliente PostgreSQL
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gnucobol postgresql-client
+
+      - name: Preparar role da aplicacao
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d conciliacao_ci -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          BEGIN
+              IF NOT EXISTS (
+                  SELECT 1 FROM pg_roles WHERE rolname = 'conciliacao_app'
+              ) THEN
+                  CREATE ROLE conciliacao_app LOGIN PASSWORD 'app';
+              END IF;
+          END
+          $$;
+          SQL
+
+      - name: Aplicar migrations no PostgreSQL de CI
+        working-directory: conciliacao-api-java
+        env:
+          PGPASSWORD: postgres
+        run: |
+          for arquivo in src/main/resources/db/migration/V*.sql; do
+            echo "Aplicando $arquivo"
+            psql -h localhost -U postgres -d conciliacao_ci \
+              -v ON_ERROR_STOP=1 -f "$arquivo"
+          done
+
+      - name: Compilar motor COBOL
+        run: |
+          mkdir -p /tmp/conciliacao-ci
+          cobc -x -free -o /tmp/conciliacao-ci/conciliacao \
+            cobol-conciliacao/conciliacao.cob \
+            cobol-conciliacao/validar-monetario.cob \
+            cobol-conciliacao/entrada-segura.c \
+            cobol-conciliacao/relatorio-seguro.c
+
+      - name: Executar suite Java com PostgreSQL e COBOL reais
+        working-directory: conciliacao-api-java
+        env:
+          CONCILIACAO_TESTE_POSTGRESQL: 'true'
+          CONCILIACAO_DB_URL: jdbc:postgresql://localhost:5432/conciliacao_ci
+          CONCILIACAO_DB_USER: conciliacao_app
+          CONCILIACAO_DB_PASSWORD: app
+          CONCILIACAO_DB_TEST_NAME: conciliacao_ci
+          CONCILIACAO_FLYWAY_URL: jdbc:postgresql://localhost:5432/conciliacao_ci
+          CONCILIACAO_FLYWAY_USER: postgres
+          CONCILIACAO_FLYWAY_PASSWORD: postgres
+          COBOL_EXECUTAVEL_TESTE: /tmp/conciliacao-ci/conciliacao
+          CONCILIACAO_COBOL_EXECUTAVEL: /tmp/conciliacao-ci/conciliacao
+        run: bash ./mvnw test
+
+      - name: Validar constraints da revisao operacional
+        working-directory: conciliacao-api-java
+        env:
+          PGPASSWORD: app
+        run: |
+          psql -h localhost -U conciliacao_app -d conciliacao_ci \
+            -v ON_ERROR_STOP=1 -f testes/validar-revisao-operacional.sql

@@ -205,6 +205,7 @@ V2
 V3
 V4
 V5
+V6
 ```
 
 As migrations aplicadas são tratadas como imutáveis.
@@ -378,3 +379,33 @@ sem os controles planejados para os próximos blocos.
 - integração end-to-end.
 
 Mainframe, z/OS, JCL, Db2 e CICS não fazem parte desta implementação local.
+
+## Revisao operacional 2026-10
+
+A revisao operacional adicionou:
+
+- leitura consistente de cabecalho e detalhes em `REPEATABLE_READ`;
+- admissao de capacidade antes de criar execucao e snapshot;
+- `lock_timeout` e timeout de consulta JDBC configuraveis;
+- contrato de identificadores alinhado entre Java, PostgreSQL e COBOL;
+- V6 com protecao de snapshot apos o fim do processamento e validacao diferida de `CONCLUIDA`;
+- recuperacao periodica de execucoes antigas em `EM_PROCESSAMENTO`;
+- CI com Java 21, PostgreSQL real e motor COBOL real.
+
+O `POST /api/conciliacoes` continua criando uma nova execucao a cada chamada.
+Ele nao e idempotente: uma repeticao apos perda da resposta pode gerar outra
+execucao historica. Clientes nao devem fazer retry automatico desse POST nesta
+versao. Um mecanismo `Idempotency-Key` fica fora do contrato atual.
+
+Configuracoes novas:
+
+```text
+CONCILIACAO_DB_LOCK_TIMEOUT_MS=5000
+CONCILIACAO_DB_QUERY_TIMEOUT=15s
+CONCILIACAO_RECUPERACAO_HABILITADA=true
+CONCILIACAO_RECUPERACAO_IDADE_MINIMA_MS=300000
+CONCILIACAO_RECUPERACAO_INTERVALO_MS=60000
+CONCILIACAO_RECUPERACAO_TEMPORARIOS_IDADE_MINIMA_MS=1800000
+```
+
+Detalhes e validacao: `docs/revisao-operacional.md`.

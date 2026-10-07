@@ -230,3 +230,13 @@ cliente → upload de CSV → COBOL
 Essa regra preserva a correspondência entre os dados originais, os arquivos
 entregues ao COBOL e o resultado posteriormente validado contra o mesmo
 snapshot.
+
+## Politica de repeticao e idempotencia
+
+`POST /api/conciliacoes` representa o comando de iniciar uma nova execucao.
+Cada chamada aceita cria uma nova conciliacao historica, mesmo quando os dados
+de origem nao mudaram. Portanto o endpoint nao e idempotente nesta versao.
+
+Se o cliente perder a resposta, ele deve consultar o historico antes de decidir
+por uma nova execucao. Retry automatico do POST nao e recomendado. Suporte a
+`Idempotency-Key` nao faz parte do contrato atual.
