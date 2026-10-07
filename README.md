@@ -372,9 +372,8 @@ sem os controles planejados para os próximos blocos.
 - usuários;
 - autenticação;
 - isolamento por usuário;
-- recuperação de execuções abandonadas;
 - consolidação do backend;
-- CI/CD;
+- CD/deploy automatizado;
 - frontend Angular;
 - integração end-to-end.
 

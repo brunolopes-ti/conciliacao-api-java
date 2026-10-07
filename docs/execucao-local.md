@@ -312,25 +312,24 @@ unset CONCILIACAO_COBOL_EXECUTAVEL
 unset COBOL_EXECUTAVEL_TESTE
 ```
 
-## Limitação conhecida — recuperação após queda
+## Recuperação após queda
 
-Nesta versão ainda não existe recuperação automática de uma conciliação que permaneça em:
+A revisão operacional adicionou recuperação automática para execuções que
+permaneçam em:
 
 ```text
 EM_PROCESSAMENTO
 ```
 
-caso a JVM, o sistema operacional ou a máquina sejam encerrados abruptamente durante o processamento.
+após interrupção abrupta da JVM, do sistema operacional ou da máquina.
 
-Esse comportamento não será resolvido silenciosamente por reprocessamento automático, pois isso exige uma política explícita para determinar:
+A rotina periódica considera a idade mínima configurada e marca a execução como
+`FALHOU`, com código `EXECUCAO_INTERROMPIDA`. Ela não reprocessa a conciliação
+automaticamente e não cria uma nova execução.
 
-- quando uma execução pode ser considerada abandonada;
-- se ela deve apenas ser marcada como falha;
-- se pode ser reprocessada;
-- como evitar execução duplicada;
-- como tratar várias instâncias da aplicação.
-
-A recuperação de execuções abandonadas fica registrada para a etapa de consolidação operacional do projeto.
+Os parâmetros de recuperação são documentados na seção
+`Revisao operacional — timeouts e recuperacao` abaixo e em
+`docs/revisao-operacional.md`.
 
 ## Escopo
 
