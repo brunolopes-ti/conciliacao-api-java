@@ -31,6 +31,7 @@ import br.com.brunolopes.conciliacao.modelo.StatusExecucaoConciliacao;
 class RepositorioConsultaConciliacaoJdbcPostgresqlTests {
 
     private JdbcTemplate jdbcTemplate;
+    private JdbcTemplate jdbcAdmin;
     private RepositorioConsultaConciliacaoJdbc repositorio;
     private TransactionTemplate transactionTemplate;
 
@@ -49,6 +50,21 @@ class RepositorioConsultaConciliacaoJdbcPostgresqlTests {
         String senha =
                 variavelObrigatoria(
                         "CONCILIACAO_DB_PASSWORD"
+                );
+
+        String urlAdmin =
+                variavelObrigatoria(
+                        "CONCILIACAO_FLYWAY_URL"
+                );
+
+        String usuarioAdmin =
+                variavelObrigatoria(
+                        "CONCILIACAO_FLYWAY_USER"
+                );
+
+        String senhaAdmin =
+                variavelObrigatoria(
+                        "CONCILIACAO_FLYWAY_PASSWORD"
                 );
 
         String bancoEsperado =
@@ -71,13 +87,31 @@ class RepositorioConsultaConciliacaoJdbcPostgresqlTests {
                         senha
                 );
 
+        DataSource dataSourceAdmin =
+                new DriverManagerDataSource(
+                        urlAdmin,
+                        usuarioAdmin,
+                        senhaAdmin
+                );
+
         jdbcTemplate =
                 new JdbcTemplate(
                         dataSource
                 );
 
+        jdbcAdmin =
+                new JdbcTemplate(
+                        dataSourceAdmin
+                );
+
         String bancoAtual =
                 jdbcTemplate.queryForObject(
+                        "SELECT current_database()",
+                        String.class
+                );
+
+        String bancoAdmin =
+                jdbcAdmin.queryForObject(
                         "SELECT current_database()",
                         String.class
                 );
@@ -92,6 +126,12 @@ class RepositorioConsultaConciliacaoJdbcPostgresqlTests {
                 bancoEsperado,
                 bancoAtual,
                 "Conexao apontou para banco diferente do esperado."
+        );
+
+        assertEquals(
+                bancoEsperado,
+                bancoAdmin,
+                "Conexao administrativa apontou para banco diferente do esperado."
         );
 
         assertEquals(
@@ -686,33 +726,34 @@ class RepositorioConsultaConciliacaoJdbcPostgresqlTests {
     private void excluirConciliacaoTeste(
             long conciliacaoId
     ) {
-        transactionTemplate.executeWithoutResult(
-                statusTransacao -> {
-                    jdbcTemplate.update(
-                            "DELETE FROM public.conciliacao_detalhes WHERE conciliacao_id = ?",
-                            conciliacaoId
-                    );
+        /*
+         * A role conciliacao_app nao possui DELETE por projeto.
+         * A limpeza de massa de teste usa a conexao administrativa,
+         * como as demais suites PostgreSQL do projeto.
+         */
+        jdbcAdmin.update(
+                "DELETE FROM public.conciliacao_detalhes WHERE conciliacao_id = ?",
+                conciliacaoId
+        );
 
-                    jdbcTemplate.update(
-                            "DELETE FROM public.conciliacao_resumos WHERE conciliacao_id = ?",
-                            conciliacaoId
-                    );
+        jdbcAdmin.update(
+                "DELETE FROM public.conciliacao_resumos WHERE conciliacao_id = ?",
+                conciliacaoId
+        );
 
-                    jdbcTemplate.update(
-                            "DELETE FROM public.conciliacao_snapshot_pagamentos WHERE conciliacao_id = ?",
-                            conciliacaoId
-                    );
+        jdbcAdmin.update(
+                "DELETE FROM public.conciliacao_snapshot_pagamentos WHERE conciliacao_id = ?",
+                conciliacaoId
+        );
 
-                    jdbcTemplate.update(
-                            "DELETE FROM public.conciliacao_snapshot_cobrancas WHERE conciliacao_id = ?",
-                            conciliacaoId
-                    );
+        jdbcAdmin.update(
+                "DELETE FROM public.conciliacao_snapshot_cobrancas WHERE conciliacao_id = ?",
+                conciliacaoId
+        );
 
-                    jdbcTemplate.update(
-                            "DELETE FROM public.conciliacoes WHERE id = ?",
-                            conciliacaoId
-                    );
-                }
+        jdbcAdmin.update(
+                "DELETE FROM public.conciliacoes WHERE id = ?",
+                conciliacaoId
         );
     }
 
