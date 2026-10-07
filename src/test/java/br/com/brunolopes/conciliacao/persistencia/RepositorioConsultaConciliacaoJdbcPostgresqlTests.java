@@ -257,175 +257,201 @@ class RepositorioConsultaConciliacaoJdbcPostgresqlTests {
 
     @Test
     void deveBuscarConciliacaoConcluidaComResumoEDetalhes() {
-        transactionTemplate.executeWithoutResult(
-                statusTransacao -> {
+        /*
+         * buscarPorId usa REQUIRES_NEW. A massa precisa estar commitada
+         * antes da leitura para representar o que outra transacao enxerga.
+         */
+        Long idCriado =
+                transactionTemplate.execute(
+                        statusTransacao -> {
+                            long id =
+                                    inserirConcluida();
 
-                    long id =
-                            inserirConcluida();
-
-                    inserirResumo(
-                            id
-                    );
-
-                    inserirDetalhes(
-                            id
-                    );
-
-                    Optional<ConciliacaoConsultada>
-                            resultado =
-                                    repositorio.buscarPorId(
-                                            id
-                                    );
-
-                    assertTrue(
-                            resultado.isPresent()
-                    );
-
-                    ConciliacaoConsultada conciliacao =
-                            resultado.orElseThrow();
-
-                    assertEquals(
-                            id,
-                            conciliacao.id()
-                    );
-
-                    assertEquals(
-                            StatusExecucaoConciliacao.CONCLUIDA,
-                            conciliacao.status()
-                    );
-
-                    assertEquals(
-                            1,
-                            conciliacao.resultadoVersao()
-                    );
-
-                    assertNull(
-                            conciliacao.erroCodigo()
-                    );
-
-                    assertEquals(
-                            1,
-                            conciliacao
-                                    .resumo()
-                                    .conferidos()
-                    );
-
-                    assertEquals(
-                            1,
-                            conciliacao
-                                    .resumo()
-                                    .semRecebimento()
-                    );
-
-                    assertEquals(
-                            new BigDecimal("300.00"),
-                            conciliacao
-                                    .resumo()
-                                    .totalEsperado()
-                    );
-
-                    assertEquals(
-                            new BigDecimal("100.00"),
-                            conciliacao
-                                    .resumo()
-                                    .totalRecebido()
-                    );
-
-                    assertEquals(
-                            new BigDecimal("-200.00"),
-                            conciliacao
-                                    .resumo()
-                                    .saldoGlobal()
-                    );
-
-                    assertEquals(
-                            2,
-                            conciliacao.detalhes().size()
-                    );
-
-                    assertEquals(
-                            1,
-                            conciliacao
-                                    .detalhes()
-                                    .get(0)
-                                    .ordem()
-                    );
-
-                    assertEquals(
-                            "P001",
-                            conciliacao
-                                    .detalhes()
-                                    .get(0)
-                                    .identificador()
-                    );
-
-                    assertEquals(
-                            2,
-                            conciliacao
-                                    .detalhes()
-                                    .get(1)
-                                    .ordem()
-                    );
-
-                    assertEquals(
-                            "P002",
-                            conciliacao
-                                    .detalhes()
-                                    .get(1)
-                                    .identificador()
-                    );
-
-                    assertNull(
-                            conciliacao
-                                    .detalhes()
-                                    .get(1)
-                                    .valorRecebido()
-                    );
-
-                    statusTransacao.setRollbackOnly();
-                }
-        );
-    }
-
-    @Test
-    void deveBuscarExecucaoFalhaSemResultado() {
-        transactionTemplate.executeWithoutResult(
-                statusTransacao -> {
-
-                    long id =
-                            inserirFalhou(
-                                    "2099-03-01 12:00:00+00"
+                            inserirResumo(
+                                    id
                             );
 
-                    ConciliacaoConsultada conciliacao =
+                            inserirDetalhes(
+                                    id
+                            );
+
+                            return id;
+                        }
+                );
+
+        long id =
+                exigirId(
+                        idCriado
+                );
+
+        try {
+            Optional<ConciliacaoConsultada>
+                    resultado =
                             repositorio.buscarPorId(
-                                            id
-                                    )
-                                    .orElseThrow();
+                                    id
+                            );
 
-                    assertEquals(
-                            StatusExecucaoConciliacao.FALHOU,
-                            conciliacao.status()
-                    );
+            assertTrue(
+                    resultado.isPresent()
+            );
 
-                    assertEquals(
-                            "ERRO_TESTE",
-                            conciliacao.erroCodigo()
-                    );
+            ConciliacaoConsultada conciliacao =
+                    resultado.orElseThrow();
 
-                    assertNull(
-                            conciliacao.resumo()
-                    );
+            assertEquals(
+                    id,
+                    conciliacao.id()
+            );
 
-                    assertTrue(
-                            conciliacao.detalhes().isEmpty()
-                    );
+            assertEquals(
+                    StatusExecucaoConciliacao.CONCLUIDA,
+                    conciliacao.status()
+            );
 
-                    statusTransacao.setRollbackOnly();
-                }
-        );
+            assertEquals(
+                    1,
+                    conciliacao.resultadoVersao()
+            );
+
+            assertNull(
+                    conciliacao.erroCodigo()
+            );
+
+            assertEquals(
+                    1,
+                    conciliacao
+                            .resumo()
+                            .conferidos()
+            );
+
+            assertEquals(
+                    1,
+                    conciliacao
+                            .resumo()
+                            .semRecebimento()
+            );
+
+            assertEquals(
+                    new BigDecimal("300.00"),
+                    conciliacao
+                            .resumo()
+                            .totalEsperado()
+            );
+
+            assertEquals(
+                    new BigDecimal("100.00"),
+                    conciliacao
+                            .resumo()
+                            .totalRecebido()
+            );
+
+            assertEquals(
+                    new BigDecimal("-200.00"),
+                    conciliacao
+                            .resumo()
+                            .saldoGlobal()
+            );
+
+            assertEquals(
+                    2,
+                    conciliacao.detalhes().size()
+            );
+
+            assertEquals(
+                    1,
+                    conciliacao
+                            .detalhes()
+                            .get(0)
+                            .ordem()
+            );
+
+            assertEquals(
+                    "P001",
+                    conciliacao
+                            .detalhes()
+                            .get(0)
+                            .identificador()
+            );
+
+            assertEquals(
+                    2,
+                    conciliacao
+                            .detalhes()
+                            .get(1)
+                            .ordem()
+            );
+
+            assertEquals(
+                    "P002",
+                    conciliacao
+                            .detalhes()
+                            .get(1)
+                            .identificador()
+            );
+
+            assertNull(
+                    conciliacao
+                            .detalhes()
+                            .get(1)
+                            .valorRecebido()
+            );
+
+        } finally {
+            excluirConciliacaoTeste(
+                    id
+            );
+        }
     }
+    @Test
+    void deveBuscarExecucaoFalhaSemResultado() {
+        /*
+         * buscarPorId abre REQUIRES_NEW; por isso a execucao de teste e
+         * commitada antes da consulta.
+         */
+        Long idCriado =
+                transactionTemplate.execute(
+                        statusTransacao ->
+                                inserirFalhou(
+                                        "2099-03-01 12:00:00+00"
+                                )
+                );
 
+        long id =
+                exigirId(
+                        idCriado
+                );
+
+        try {
+            ConciliacaoConsultada conciliacao =
+                    repositorio.buscarPorId(
+                                    id
+                            )
+                            .orElseThrow();
+
+            assertEquals(
+                    StatusExecucaoConciliacao.FALHOU,
+                    conciliacao.status()
+            );
+
+            assertEquals(
+                    "ERRO_TESTE",
+                    conciliacao.erroCodigo()
+            );
+
+            assertNull(
+                    conciliacao.resumo()
+            );
+
+            assertTrue(
+                    conciliacao.detalhes().isEmpty()
+            );
+
+        } finally {
+            excluirConciliacaoTeste(
+                    id
+            );
+        }
+    }
     @Test
     void deveRetornarVazioParaConciliacaoInexistente() {
         Optional<ConciliacaoConsultada> resultado =
@@ -654,6 +680,39 @@ class RepositorioConsultaConciliacaoJdbcPostgresqlTests {
                 )
                 """,
                 conciliacaoId
+        );
+    }
+
+    private void excluirConciliacaoTeste(
+            long conciliacaoId
+    ) {
+        transactionTemplate.executeWithoutResult(
+                statusTransacao -> {
+                    jdbcTemplate.update(
+                            "DELETE FROM public.conciliacao_detalhes WHERE conciliacao_id = ?",
+                            conciliacaoId
+                    );
+
+                    jdbcTemplate.update(
+                            "DELETE FROM public.conciliacao_resumos WHERE conciliacao_id = ?",
+                            conciliacaoId
+                    );
+
+                    jdbcTemplate.update(
+                            "DELETE FROM public.conciliacao_snapshot_pagamentos WHERE conciliacao_id = ?",
+                            conciliacaoId
+                    );
+
+                    jdbcTemplate.update(
+                            "DELETE FROM public.conciliacao_snapshot_cobrancas WHERE conciliacao_id = ?",
+                            conciliacaoId
+                    );
+
+                    jdbcTemplate.update(
+                            "DELETE FROM public.conciliacoes WHERE id = ?",
+                            conciliacaoId
+                    );
+                }
         );
     }
 
