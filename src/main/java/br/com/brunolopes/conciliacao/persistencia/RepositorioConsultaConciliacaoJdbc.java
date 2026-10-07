@@ -5,10 +5,16 @@ import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Objects;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import br.com.brunolopes.conciliacao.modelo.ResumoConciliacao;
 import br.com.brunolopes.conciliacao.modelo.StatusConciliacao;
@@ -29,11 +35,48 @@ public class RepositorioConsultaConciliacaoJdbc
     private static final int TAMANHO_MAXIMO_PAGINA = 100;
 
     private final JdbcTemplate jdbcTemplate;
+    private final TransactionTemplate transactionTemplate;
 
+    @Autowired
+    public RepositorioConsultaConciliacaoJdbc(
+            JdbcTemplate jdbcTemplate,
+            PlatformTransactionManager transactionManager
+    ) {
+        this.jdbcTemplate = Objects.requireNonNull(
+                jdbcTemplate,
+                "JdbcTemplate e obrigatorio."
+        );
+
+        this.transactionTemplate =
+                new TransactionTemplate(
+                        Objects.requireNonNull(
+                                transactionManager,
+                                "TransactionManager e obrigatorio."
+                        )
+                );
+
+        this.transactionTemplate.setReadOnly(true);
+        this.transactionTemplate.setIsolationLevel(
+                TransactionDefinition.ISOLATION_REPEATABLE_READ
+        );
+        this.transactionTemplate.setPropagationBehavior(
+                TransactionDefinition.PROPAGATION_REQUIRES_NEW
+        );
+    }
+
+    /* Construtor de apoio para testes diretos existentes. */
     public RepositorioConsultaConciliacaoJdbc(
             JdbcTemplate jdbcTemplate
     ) {
-        this.jdbcTemplate = jdbcTemplate;
+        this(
+                jdbcTemplate,
+                new DataSourceTransactionManager(
+                        Objects.requireNonNull(
+                                jdbcTemplate.getDataSource(),
+                                "DataSource e obrigatorio."
+                        )
+                )
+        );
     }
 
     @Override
@@ -164,6 +207,25 @@ public class RepositorioConsultaConciliacaoJdbc
                 conciliacaoId
         );
 
+        Optional<ConciliacaoConsultada> resultado =
+                transactionTemplate.execute(
+                        status -> buscarPorIdConsistente(
+                                conciliacaoId
+                        )
+                );
+
+        if (resultado == null) {
+            throw new IllegalStateException(
+                    "Transacao de leitura nao retornou resultado."
+            );
+        }
+
+        return resultado;
+    }
+
+    private Optional<ConciliacaoConsultada> buscarPorIdConsistente(
+            long conciliacaoId
+    ) {
         Optional<CabecalhoConsulta> cabecalho =
                 buscarCabecalho(
                         conciliacaoId

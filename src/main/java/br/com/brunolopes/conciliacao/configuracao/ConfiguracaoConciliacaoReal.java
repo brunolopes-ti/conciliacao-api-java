@@ -8,12 +8,12 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import br.com.brunolopes.conciliacao.aplicacao.ControleCapacidadeConciliacao;
 import br.com.brunolopes.conciliacao.aplicacao.ServicoConciliacao;
 import br.com.brunolopes.conciliacao.aplicacao.ServicoConciliacaoReal;
 import br.com.brunolopes.conciliacao.integracao.ExecutorCobol;
 import br.com.brunolopes.conciliacao.integracao.IntegradorExecucaoCobol;
 import br.com.brunolopes.conciliacao.integracao.ProcessadorConciliacaoCobol;
-import br.com.brunolopes.conciliacao.integracao.ProcessadorConciliacaoCobolLimitado;
 import br.com.brunolopes.conciliacao.integracao.ProcessadorConciliacaoCobolReal;
 import br.com.brunolopes.conciliacao.persistencia.RepositorioExecucaoConciliacao;
 import br.com.brunolopes.conciliacao.persistencia.RepositorioResultadoConciliacao;
@@ -85,34 +85,24 @@ public class ConfiguracaoConciliacaoReal {
     }
 
     @Bean
-    public ProcessadorConciliacaoCobol
-            processadorConciliacaoCobol(
-                    IntegradorExecucaoCobol integrador,
-
-                    @Value(
-                            "${conciliacao.cobol.max-concorrencia:1}"
-                    )
-                    int maxConcorrencia,
-                    @Value("${conciliacao.cobol.espera-vaga-ms:1000}")
-                    long esperaVagaMs
-            ) {
-
-        if (maxConcorrencia <= 0) {
-            throw new IllegalStateException(
-                    "Limite de concorrencia do COBOL "
-                            + "deve ser maior que zero."
-            );
-        }
-
-        ProcessadorConciliacaoCobol real =
-                new ProcessadorConciliacaoCobolReal(
-                        integrador
-                );
-
-        return new ProcessadorConciliacaoCobolLimitado(
-                real,
+    public ControleCapacidadeConciliacao controleCapacidadeConciliacao(
+            @Value("${conciliacao.cobol.max-concorrencia:1}")
+            int maxConcorrencia,
+            @Value("${conciliacao.cobol.espera-vaga-ms:1000}")
+            long esperaVagaMs
+    ) {
+        return new ControleCapacidadeConciliacao(
                 maxConcorrencia,
                 esperaVagaMs
+        );
+    }
+
+    @Bean
+    public ProcessadorConciliacaoCobol processadorConciliacaoCobol(
+            IntegradorExecucaoCobol integrador
+    ) {
+        return new ProcessadorConciliacaoCobolReal(
+                integrador
         );
     }
 
@@ -128,13 +118,17 @@ public class ConfiguracaoConciliacaoReal {
                     repositorioResultado,
 
             ProcessadorConciliacaoCobol
-                    processadorCobol
+                    processadorCobol,
+
+            ControleCapacidadeConciliacao
+                    controleCapacidade
     ) {
         return new ServicoConciliacaoReal(
                 repositorioExecucao,
                 repositorioSnapshot,
                 repositorioResultado,
-                processadorCobol
+                processadorCobol,
+                controleCapacidade
         );
     }
 }

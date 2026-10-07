@@ -35,16 +35,36 @@ public final class ServicoConciliacaoReal
     private final ProcessadorConciliacaoCobol
             processadorCobol;
 
+    private final ControleCapacidadeConciliacao
+            controleCapacidade;
+
     public ServicoConciliacaoReal(
             RepositorioExecucaoConciliacao repositorioExecucao,
             RepositorioSnapshotConciliacao repositorioSnapshot,
             RepositorioResultadoConciliacao repositorioResultado,
             ProcessadorConciliacaoCobol processadorCobol
     ) {
+        this(
+                repositorioExecucao,
+                repositorioSnapshot,
+                repositorioResultado,
+                processadorCobol,
+                ControleCapacidadeConciliacao.semLimite()
+        );
+    }
+
+    public ServicoConciliacaoReal(
+            RepositorioExecucaoConciliacao repositorioExecucao,
+            RepositorioSnapshotConciliacao repositorioSnapshot,
+            RepositorioResultadoConciliacao repositorioResultado,
+            ProcessadorConciliacaoCobol processadorCobol,
+            ControleCapacidadeConciliacao controleCapacidade
+    ) {
         if (repositorioExecucao == null
                 || repositorioSnapshot == null
                 || repositorioResultado == null
-                || processadorCobol == null) {
+                || processadorCobol == null
+                || controleCapacidade == null) {
 
             throw new IllegalArgumentException(
                     "Dependencias do servico "
@@ -52,21 +72,23 @@ public final class ServicoConciliacaoReal
             );
         }
 
-        this.repositorioExecucao =
-                repositorioExecucao;
-
-        this.repositorioSnapshot =
-                repositorioSnapshot;
-
-        this.repositorioResultado =
-                repositorioResultado;
-
-        this.processadorCobol =
-                processadorCobol;
+        this.repositorioExecucao = repositorioExecucao;
+        this.repositorioSnapshot = repositorioSnapshot;
+        this.repositorioResultado = repositorioResultado;
+        this.processadorCobol = processadorCobol;
+        this.controleCapacidade = controleCapacidade;
     }
 
     @Override
     public ResultadoServicoConciliacao executar() {
+        try (ControleCapacidadeConciliacao.Permissao permissao =
+                     controleCapacidade.adquirir()) {
+
+            return executarComPermissao();
+        }
+    }
+
+    private ResultadoServicoConciliacao executarComPermissao() {
         long conciliacaoId =
                 repositorioExecucao
                         .criarEmProcessamento();
