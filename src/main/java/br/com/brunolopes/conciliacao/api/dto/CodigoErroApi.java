@@ -3,6 +3,7 @@ package br.com.brunolopes.conciliacao.api.dto;
 public enum CodigoErroApi {
 
     REQUISICAO_INVALIDA,
+    EMAIL_JA_CADASTRADO,
     CONCILIACAO_NAO_ENCONTRADA,
     RELATORIO_INDISPONIVEL,
     CONFLITO_DADOS,

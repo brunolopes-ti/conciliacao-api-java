@@ -2,6 +2,7 @@ package br.com.brunolopes.conciliacao.api.erro;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -11,6 +12,7 @@ import br.com.brunolopes.conciliacao.api.dto.ErroResponse;
 import br.com.brunolopes.conciliacao.aplicacao.excecao.CapacidadeEsgotadaException;
 import br.com.brunolopes.conciliacao.aplicacao.excecao.ConciliacaoNaoEncontradaException;
 import br.com.brunolopes.conciliacao.aplicacao.excecao.ConflitoDadosException;
+import br.com.brunolopes.conciliacao.aplicacao.excecao.EmailJaCadastradoException;
 import br.com.brunolopes.conciliacao.aplicacao.excecao.FalhaCobolException;
 import br.com.brunolopes.conciliacao.aplicacao.excecao.RelatorioIndisponivelException;
 import br.com.brunolopes.conciliacao.aplicacao.excecao.RequisicaoInvalidaException;
@@ -30,6 +32,28 @@ public class TratadorGlobalExcecoes {
                 HttpStatus.BAD_REQUEST,
                 CodigoErroApi.REQUISICAO_INVALIDA,
                 erro.getMessage()
+        );
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErroResponse> tratarCorpoInvalido(
+            HttpMessageNotReadableException erro
+    ) {
+        return responder(
+                HttpStatus.BAD_REQUEST,
+                CodigoErroApi.REQUISICAO_INVALIDA,
+                "Corpo da requisicao invalido."
+        );
+    }
+
+    @ExceptionHandler(EmailJaCadastradoException.class)
+    public ResponseEntity<ErroResponse> tratarEmailJaCadastrado(
+            EmailJaCadastradoException erro
+    ) {
+        return responder(
+                HttpStatus.CONFLICT,
+                CodigoErroApi.EMAIL_JA_CADASTRADO,
+                "Email ja cadastrado."
         );
     }
 
